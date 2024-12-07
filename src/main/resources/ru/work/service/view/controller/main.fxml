@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.Cursor?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<HBox maxHeight="541.0" maxWidth="930.0" minHeight="-Infinity" minWidth="-Infinity" prefHeight="540.0" prefWidth="930.0" xmlns="http://javafx.com/javafx/18" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ru.work.service.view.controller.MainController">
+   <VBox prefHeight="538.0" prefWidth="310.0">
+      <children>
+         <VBox prefHeight="51.0" prefWidth="337.0">
+            <children>
+               <AnchorPane prefHeight="65.0" prefWidth="337.0">
+                  <children>
+                     <Label alignment="TOP_LEFT" layoutX="11.0" layoutY="7.0" prefHeight="42.0" prefWidth="209.0" text="Необходимо выбрать файл или папку для обработки:" textFill="#4a89ff" textOverrun="WORD_ELLIPSIS" wrapText="true">
+                        <font>
+                           <Font name="Segoe UI" size="14.0" />
+                        </font>
+                     </Label>
+                  </children>
+               </AnchorPane>
+            </children>
+         </VBox>
+         <VBox prefHeight="49.0" prefWidth="310.0">
+            <children>
+               <AnchorPane prefHeight="53.0" prefWidth="310.0">
+                  <children>
+                     <Button fx:id="openButton" layoutX="14.0" layoutY="22.0" mnemonicParsing="false" prefHeight="26.0" prefWidth="126.0" text="один файл...">
+                        <font>
+                           <Font name="Georgia" size="12.0" />
+                        </font></Button>
+                     <Button fx:id="openMultipleButton" layoutX="169.0" layoutY="22.0" mnemonicParsing="false" prefHeight="26.0" prefWidth="126.0" text="папка...">
+                        <font>
+                           <Font name="Georgia" size="12.0" />
+                        </font></Button>
+                  </children>
+               </AnchorPane>
+            </children>
+         </VBox>
+         <VBox fillWidth="false" prefHeight="437.0" prefWidth="310.0">
+            <children>
+               <AnchorPane prefHeight="438.0" prefWidth="310.0" stylesheets="@../css/standart-list.css">
+                  <children>
+                       <ListView fx:id="fileList" layoutX="11.0" layoutY="68.0" prefHeight="314.0" prefWidth="287.0" styleClass="../css/standart-list.css">
+                           <cursor>
+                               <Cursor fx:constant="DEFAULT" />
+                           </cursor>
+                       </ListView>
+                       <Button fx:id="startButton" layoutX="14.0" layoutY="397.0" mnemonicParsing="false" prefHeight="26.0" prefWidth="126.0" text="Получить">
+                           <font>
+                               <Font name="Georgia" size="12.0" />
+                           </font>
+                       </Button>
+                     <Label fx:id="openTitleLabel" alignment="TOP_LEFT" layoutX="14.0" layoutY="15.0" prefHeight="19.0" prefWidth="126.0" textFill="#4a89ff" textOverrun="WORD_ELLIPSIS" wrapText="true">
+                        <font>
+                           <Font name="System Bold" size="12.0" />
+                        </font>
+                     </Label>
+                     <Label fx:id="openNameLabel" layoutX="140.0" layoutY="8.0" prefHeight="34.0" prefWidth="158.0" textFill="#4a89ff" textOverrun="WORD_ELLIPSIS" wrapText="true">
+                        <font>
+                           <Font name="System Bold" size="12.0" />
+                        </font>
+                     </Label>
+                     <Button fx:id="downloadButton" layoutX="169.0" layoutY="397.0" mnemonicParsing="false" prefHeight="26.0" prefWidth="126.0" text="Сохранить как...">
+                        <font>
+                           <Font name="Georgia" size="12.0" />
+                        </font>
+                     </Button>
+                     <Label fx:id="countLabel" alignment="TOP_LEFT" layoutX="18.0" layoutY="42.0" prefHeight="19.0" prefWidth="103.0" textFill="#4a89ff" textOverrun="WORD_ELLIPSIS" wrapText="true">
+                        <font>
+                           <Font name="System Bold" size="12.0" />
+                        </font>
+                     </Label>
+                  </children>
+               </AnchorPane>
+            </children>
+         </VBox>
+      </children>
+   </VBox>
+   <VBox prefHeight="538.0" prefWidth="610.0">
+      <children>
+          <AnchorPane prefHeight="538.0" prefWidth="608.0" stylesheets="@../css/log-list.css">
+              <ListView fx:id="logView" layoutX="14.0" layoutY="45.0" prefHeight="480.0" prefWidth="590.0" styleClass="../css/log-list.css" />
+              <Button fx:id="clearLogButton" layoutX="512.0" layoutY="12.0" mnemonicParsing="false" prefHeight="19.0" prefWidth="90.0" text="очистить лог">
+                  <font>
+                      <Font name="Georgia" size="10.0" />
+                  </font>
+              </Button>
+            <Button fx:id="showErrorsButton" layoutX="14.0" layoutY="8.0" mnemonicParsing="false" prefHeight="26.0" prefWidth="179.0" text="Информация по обработке">
+               <font>
+                  <Font name="Georgia" size="12.0" />
+               </font>
+            </Button>
+          </AnchorPane>
+      </children>
+   </VBox>
+</HBox>

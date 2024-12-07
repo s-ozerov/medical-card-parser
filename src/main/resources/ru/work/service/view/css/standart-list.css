@@ -1,0 +1,5 @@
+.list-cell:filled, .list-cell:filled {
+    -fx-pref-height: 16;
+    -fx-font-size: 12px;
+    -fx-font-family: "Bookman Old Style"
+}

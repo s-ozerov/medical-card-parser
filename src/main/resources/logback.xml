@@ -1,0 +1,18 @@
+<configuration>
+    <springProperty scope="context" name="springAppName" source="spring.application.name"/>
+    <property name="LOGS" value="./logs"/>
+
+    <appender name="STDOUT"
+              class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <charset>UTF-8</charset>
+            <pattern>%green(%d{HH:mm:ss.SSS}) %blue([%thread]) %highlight(%-5level) %yellow(%logger{36}): %msg%n
+            </pattern>
+        </encoder>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="STDOUT"/>
+    </root>
+
+</configuration>

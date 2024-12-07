@@ -1,0 +1,12 @@
+.button {
+    -fx-background-color: linear-gradient(#be1d00, #ff5400);
+    -fx-background-radius: 30;
+    -fx-background-insets: 0;
+    -fx-text-fill: white;
+    -fx-effect: dropshadow(three-pass-box, rgba(0, 0, 0, 0.6), 5, 0.0, 0, 1);
+}
+
+.button:hover {
+    -shrink-animate-on-press: true;
+    -fx-background-color: linear-gradient(#ff5400, #be1d00);
+}
