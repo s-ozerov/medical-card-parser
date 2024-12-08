@@ -55,14 +55,14 @@
                                <Font name="Georgia" size="12.0" />
                            </font>
                        </Button>
-                     <Label fx:id="openTitleLabel" alignment="TOP_LEFT" layoutX="14.0" layoutY="15.0" prefHeight="19.0" prefWidth="126.0" textFill="#4a89ff" textOverrun="WORD_ELLIPSIS" wrapText="true">
+                     <Label fx:id="openTitleLabel" alignment="TOP_LEFT" layoutX="11.0" layoutY="15.0" prefHeight="19.0" prefWidth="109.0" textFill="#4a89ff" textOverrun="WORD_ELLIPSIS" wrapText="true">
                         <font>
-                           <Font name="System Bold" size="12.0" />
+                           <Font name="Segoe UI" size="12.0" />
                         </font>
                      </Label>
-                     <Label fx:id="openNameLabel" layoutX="140.0" layoutY="8.0" prefHeight="34.0" prefWidth="158.0" textFill="#4a89ff" textOverrun="WORD_ELLIPSIS" wrapText="true">
+                     <Label fx:id="openNameLabel" layoutX="126.0" layoutY="8.0" prefHeight="34.0" prefWidth="172.0" textFill="#4a89ff" textOverrun="WORD_ELLIPSIS" wrapText="true">
                         <font>
-                           <Font name="System Bold" size="12.0" />
+                           <Font name="Segoe UI" size="12.0" />
                         </font>
                      </Label>
                      <Button fx:id="downloadButton" layoutX="169.0" layoutY="397.0" mnemonicParsing="false" prefHeight="26.0" prefWidth="126.0" text="Сохранить как...">
@@ -70,9 +70,14 @@
                            <Font name="Georgia" size="12.0" />
                         </font>
                      </Button>
-                     <Label fx:id="countLabel" alignment="TOP_LEFT" layoutX="18.0" layoutY="42.0" prefHeight="19.0" prefWidth="103.0" textFill="#4a89ff" textOverrun="WORD_ELLIPSIS" wrapText="true">
+                     <Label fx:id="countLabel" alignment="TOP_LEFT" layoutX="126.0" layoutY="42.0" prefHeight="19.0" prefWidth="39.0" textFill="#4a89ff" textOverrun="WORD_ELLIPSIS" wrapText="true">
                         <font>
-                           <Font name="System Bold" size="12.0" />
+                           <Font name="Segoe UI" size="12.0" />
+                        </font>
+                     </Label>
+                     <Label fx:id="countNameLabel" alignment="TOP_LEFT" layoutX="11.0" layoutY="42.0" prefHeight="19.0" prefWidth="99.0" text="Кол-во файлов:" textFill="#4a89ff" textOverrun="WORD_ELLIPSIS" wrapText="true">
+                        <font>
+                           <Font name="Segoe UI" size="12.0" />
                         </font>
                      </Label>
                   </children>

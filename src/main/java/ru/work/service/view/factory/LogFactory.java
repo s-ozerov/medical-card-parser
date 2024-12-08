@@ -13,7 +13,8 @@ import java.util.Formatter;
 
 public class LogFactory {
 
-    private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd MMMM HH:mm:ss");
+    private static final DateTimeFormatter formatter1 = DateTimeFormatter.ofPattern("dd MMMM HH:mm:ss");
+    private static final DateTimeFormatter formatter2 = DateTimeFormatter.ofPattern("HH:mm:ss");
 
     private final Logger log;
     private final ListView<String> view;
@@ -60,7 +61,7 @@ public class LogFactory {
                 view.getItems().clear();
                 view.getItems().addAll(array.subList(800, 1000));
             }
-            String date = LocalDateTime.now().format(formatter);
+            String date = LocalDateTime.now().format(formatter2);
             view.getItems().add(date + " " + status + ":  " + message);
         });
     }

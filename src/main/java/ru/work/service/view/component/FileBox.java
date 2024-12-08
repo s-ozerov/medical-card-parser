@@ -31,6 +31,7 @@ import static ru.work.service.dto.enums.ProcessedStatus.FAILED_PROCESS;
 import static ru.work.service.dto.enums.ProcessedStatus.FAILED_READ;
 import static ru.work.service.dto.enums.ProcessedStatus.FILE_NO_TEMPLATE;
 import static ru.work.service.dto.enums.ProcessedStatus.MEDICAL_FILE_IS_EMPTY;
+import static ru.work.service.dto.enums.ProcessedStatus.WRONG_CODING;
 import static ru.work.service.view.util.StageUtil.setWidthAndHeight;
 
 public class FileBox {
@@ -45,6 +46,8 @@ public class FileBox {
             window.getIcons().add(new Image(Constants.MAIN_ICO));
 
             TextArea textArea = new TextArea();
+            textArea.setMaxWidth(600);
+            textArea.setMinWidth(600);
             textArea.setMinHeight(600);
             textArea.setMaxHeight(700);
             textArea.setEditable(false);
@@ -79,30 +82,24 @@ public class FileBox {
 
             if (!CollectionUtils.isEmpty(file.getAntibioticGrams())) {
                 emptyLine(builder);
-                int size = file.getAntibioticGrams().get(0).items.get(0).size;
-                String value = "[1]";
-                if (size == 2) {
-                    value = "[1]\t[2]";
-                }
-                if (size == 3) {
-                    value = "[1]\t[2]\t[3]";
-                }
-                if (size == 4) {
-                    value = "[1]\t[2]\t[3]\t[4]";
-                }
+
+                String value = getCountGram(file);
                 builder.append("%s\tАнтибиотикограмма".formatted(value)).append("\n");
                 for (AntibioticGram gram : file.getAntibioticGrams()) {
                     builder.append(gram.header).append("\n");
-                    for (int i = 0; i < gram.items.size(); i++) {
-                        StringBuilder sb = new StringBuilder();
-                        AntibioticGram.AntibioticoGramItem item = gram.items.get(i);
-                        for (int j = 1; j <= item.result.size(); j++) {
-                            sb.append(item.result.get(j)).append("\t");
+                    if (!CollectionUtils.isEmpty(gram.items)) {
+                        for (int i = 0; i < gram.items.size(); i++) {
+                            StringBuilder sb = new StringBuilder();
+                            AntibioticGram.AntibioticoGramItem item = gram.items.get(i);
+                            for (int j = 1; j <= item.result.size(); j++) {
+                                sb.append(item.result.get(j)).append("\t");
+                            }
+                            builder.append("%s\t| %s".formatted(sb.toString(), item.name)).append("\n");
                         }
-                        builder.append("%s\t| %s".formatted(sb.toString(), item.name)).append("\n");
                     }
                 }
             }
+
             if (StringUtils.isNotBlank(file.getOutMaterialDate())) {
                 emptyLine(builder);
                 addLine(builder, "Дата выдачи", file.getOutMaterialDate());
@@ -121,6 +118,24 @@ public class FileBox {
             window.setScene(scene);
             window.showAndWait();
         });
+    }
+
+    private static String getCountGram(MedicalDocFile file) {
+        String value = "";
+        if (!CollectionUtils.isEmpty(file.getAntibioticGrams().get(0).items)) {
+            int size = file.getAntibioticGrams().get(0).items.get(0).size;
+            value = "[1]";
+            if (size == 2) {
+                value = "[1]\t[2]";
+            }
+            if (size == 3) {
+                value = "[1]\t[2]\t[3]";
+            }
+            if (size == 4) {
+                value = "[1]\t[2]\t[3]\t[4]";
+            }
+        }
+        return value;
     }
 
     public static void displayFilesInfo(ProcessResponse<MedicalDocFile> groupFiles) {
@@ -164,11 +179,12 @@ public class FileBox {
             emptyLine(builder);
 
             builder.append("Выжимка по неподходящим файлам [%s]".formatted(errors.size())).append("\n");
-            addLine(builder, errorsMap, MEDICAL_FILE_IS_EMPTY);
-            addLine(builder, errorsMap, ANTI_NOT_FOUND);
-            addLine(builder, errorsMap, FILE_NO_TEMPLATE);
-            addLine(builder, errorsMap, FAILED_READ);
-            addLine(builder, errorsMap, FAILED_PROCESS);
+            addLine(builder, errorsMap, MEDICAL_FILE_IS_EMPTY, false);
+            addLine(builder, errorsMap, ANTI_NOT_FOUND, false);
+            addLine(builder, errorsMap, FILE_NO_TEMPLATE, false);
+            addLine(builder, errorsMap, FAILED_READ, true);
+            addLine(builder, errorsMap, FAILED_PROCESS, true);
+            addLine(builder, errorsMap, WRONG_CODING, true);
             emptyLine(builder);
             addLine(builder, "Всего обработано файлов", completed.size() + errors.size());
 
@@ -199,12 +215,19 @@ public class FileBox {
 
     private static void addLine(StringBuilder builder,
                                 Map<ProcessedStatus, List<MedicalDocFile>> errorsMap,
-                                ProcessedStatus status) {
+                                ProcessedStatus status,
+                                Boolean printFileNames) {
         if (errorsMap == null || CollectionUtils.isEmpty(errorsMap.get(status))) {
             return;
         }
         builder.append("[").append(status.getMessage()).append("]").append(": ")
-                .append(errorsMap.get(status).size()).append("\n");
+                .append(errorsMap.get(status).size());
+        if (printFileNames) {
+            for (MedicalDocFile doc : errorsMap.get(status)) {
+                builder.append("\n").append(doc.getFilename());
+            }
+        }
+        builder.append("\n");
     }
 
     private static void emptyLine(StringBuilder builder) {

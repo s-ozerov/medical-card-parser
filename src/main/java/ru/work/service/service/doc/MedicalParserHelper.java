@@ -42,7 +42,7 @@ public class MedicalParserHelper implements ConvertDocToXlsx<MedicalDocFile> {
             int partIndex = 0;
             Map<Integer, List<String>> parts = new HashMap<>();
             for (String row : templateRows) {
-                if (row.equalsIgnoreCase(SEPARATOR_T)) {
+                if (row.equalsIgnoreCase(SEPARATOR_T) || row.equalsIgnoreCase("*" + SEPARATOR_T)) {
                     partIndex++;
                     continue;
                 }
@@ -58,13 +58,15 @@ public class MedicalParserHelper implements ConvertDocToXlsx<MedicalDocFile> {
                 return info;
             }
 
-            String outDateLine = parts.get(4).stream()
-                    .map(l -> split(l, SEPARATOR_T))
-                    .flatMap(Arrays::stream)
-                    .filter(l -> StringUtils.containsAny(l, ".2024", ".2025", ".2026", ".2027", ".2028", ".2029"))
-                    .findFirst().orElse(null);
-            if (StringUtils.isNotBlank(outDateLine)) {
-                info.setOutMaterialDate(clearSpaces(outDateLine));
+            if (parts.get(4) != null) {
+                String outDateLine = parts.get(4).stream()
+                        .map(l -> split(l, SEPARATOR_T))
+                        .flatMap(Arrays::stream)
+                        .filter(l -> StringUtils.containsAny(l, ".2024", ".2025", ".2026", ".2027", ".2028", ".2029"))
+                        .findFirst().orElse(null);
+                if (StringUtils.isNotBlank(outDateLine)) {
+                    info.setOutMaterialDate(clearSpaces(outDateLine));
+                }
             }
 
             if (CollectionUtils.isNotEmpty(parts.get(0))) {
@@ -95,6 +97,7 @@ public class MedicalParserHelper implements ConvertDocToXlsx<MedicalDocFile> {
                         Method setter = info.getClass().getMethod(setterName, type);
                         SheetColumn a = sheetColumn.getAnnotation(SheetColumn.class);
                         if (type.equals(LocalDate.class)) {
+                            value = value.replace("..", ".");
                             setter.invoke(info, LocalDate.parse(value, DateTimeFormatter.ofPattern(a.parseFromFormat())));
                         } else {
                             setter.invoke(info, value);
@@ -130,8 +133,15 @@ public class MedicalParserHelper implements ConvertDocToXlsx<MedicalDocFile> {
                 return info;
             }
 
+            if (parts.get(3) == null) {
+                info.setFailed(ProcessedStatus.ANTI_NOT_FOUND, "Файл <%s> не подходит. Антибиотикограмма пуста. Размер файла %s КБ"
+                        .formatted(info.getFilename(), file.getSizeKb()));
+                return info;
+            }
+
             log.info("Добавляем антибиотикограмму для <{}>", info.getFilename());
             String header = null;
+            boolean isSuccessPart3 = true;
             for (String row : parts.get(3)) {
                 if (StringUtils.containsAny(row, "[1]", "[2]", "[3]", "[4]", "**", "не имеет диагностического") ||
                     StringUtils.isBlank(row)) {
@@ -139,6 +149,9 @@ public class MedicalParserHelper implements ConvertDocToXlsx<MedicalDocFile> {
                 }
                 String[] params = split(row, SEPARATOR_T);
                 if (params.length == 1) {
+                    if (StringUtils.startsWithAny(row, "-", "S", "R", "I")) {
+                        isSuccessPart3 = false;
+                    }
                     header = params[0];
                     info.addAntibioticGram(header);
                 } else {
@@ -163,13 +176,22 @@ public class MedicalParserHelper implements ConvertDocToXlsx<MedicalDocFile> {
                         .formatted(info.getFilename(), file.getSizeKb()));
                 return info;
             }
+            if (!isSuccessPart3) {
+                info.setFailed(ProcessedStatus.ANTI_NOT_FOUND, "Файл <%s> не подходит. Антибиотикограмма пуста. Размер файла %s КБ"
+                        .formatted(info.getFilename(), file.getSizeKb()));
+                return info;
+            }
 
             info.setStatus(ProcessedStatus.SUCCESS);
             return info;
         } catch (Exception e) {
+            ProcessedStatus status = ProcessedStatus.FAILED_PROCESS;
+            if (e instanceof IllegalArgumentException) {
+                status = ProcessedStatus.WRONG_CODING;
+            }
             MedicalDocFile info = new MedicalDocFile(file);
             String errorMessage = "Не удалось обработать файл <%s>: %s".formatted(file.getFilename(), e.getMessage());
-            info.setFailed(ProcessedStatus.FAILED_PROCESS, errorMessage);
+            info.setFailed(status, errorMessage);
             return info;
         }
     }

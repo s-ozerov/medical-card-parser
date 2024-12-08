@@ -71,6 +71,8 @@ public class MainController {
     @FXML
     private Label openNameLabel;
     @FXML
+    private Label countNameLabel;
+    @FXML
     private Label countLabel;
 
     private final MedicalSheetFileHandler medicalHandler;
@@ -84,6 +86,7 @@ public class MainController {
 
     @FXML
     public void initialize() {
+        countNameLabel.setVisible(false);
         openTitleLabel.setVisible(false);
         openNameLabel.setVisible(false);
 
@@ -128,13 +131,14 @@ public class MainController {
         startButton.setDisable(true);
 
         openButton.setOnAction(e -> {
-            _log.info("");
             openTitleLabel.setText("");
             openNameLabel.setText("");
             File file = fileChooser.showOpenDialog(JavaFxApplication.WINDOW);
             if (file != null) {
                 String filename = file.getName();
                 String path = file.getAbsolutePath();
+
+                logDelim();
 
                 _log.info("Путь к файлу <%s>", path);
                 _log.info("Имя файла: %s", filename);
@@ -172,6 +176,7 @@ public class MainController {
                     } else {
                         this.fileList.getItems().clear();
                         countLabel.setText("");
+                        countNameLabel.setVisible(false);
                         showErrorsButton.setVisible(false);
 
                         startButton.setDisable(false);
@@ -183,7 +188,6 @@ public class MainController {
 
         final DirectoryChooser directoryChooser = new DirectoryChooser();
         openMultipleButton.setOnAction(e -> {
-            _log.info("");
             openTitleLabel.setText("");
             openNameLabel.setText("");
 
@@ -193,10 +197,13 @@ public class MainController {
             if (selectedDirectory != null) {
                 this.currentFileInfo = null;
                 this.fileList.getItems().clear();
+                countNameLabel.setVisible(false);
                 countLabel.setText("");
                 showErrorsButton.setVisible(false);
                 openTitleLabel.setVisible(true);
                 openNameLabel.setVisible(true);
+
+                logDelim();
 
                 _log.info("Найдена папка: %s", selectedDirectory.getAbsolutePath());
                 openTitleLabel.setText("Выбранная папка:");
@@ -291,7 +298,14 @@ public class MainController {
                 .sorted(Comparator.comparing(MedicalDocFile::getFilename))
                 .toList();
         this.fileList.getItems().addAll(result);
+        countNameLabel.setVisible(true);
         countLabel.setText(String.valueOf(this.fileList.getItems().size()));
+    }
+
+    private void logDelim(){
+        if(!logView.getItems().isEmpty()){
+            _log.info("=======================================================================");
+        }
     }
 
 }

@@ -15,8 +15,8 @@ public interface ConvertDocToXlsx<T> {
     default StringBuilder clearParagraphsToText(String text) {
         StringBuilder builder = new StringBuilder(text);
         for (int i = 0; i < builder.length(); i++) {
-            if (builder.charAt(i) == '\r' || builder.charAt(i) == '\n') {
-                builder.deleteCharAt(i);
+            if (builder.charAt(0) == '\r' || builder.charAt(0) == '\n') {
+                builder.deleteCharAt(0);
             } else {
                 break;
             }

@@ -2,6 +2,7 @@ package ru.work.service.dto.medical;
 
 import lombok.Getter;
 import lombok.Setter;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import ru.work.service.anotations.SheetColumn;
 import ru.work.service.dto.FileDto;
@@ -14,9 +15,6 @@ import java.util.List;
 @Getter
 @Setter
 public class MedicalDocFile extends FileDto {
-
-    private String header;
-    private String subHeader;
 
     @SheetColumn(name = "Дата поступления материала", parseFromFormat = "dd.MM.yyyy")
     private LocalDate receiveMaterialDate;
@@ -33,6 +31,18 @@ public class MedicalDocFile extends FileDto {
     @SheetColumn(name = "Отделение")
     private String division;
 
+    private String header;
+    private String subHeader;
+    private LinkedList<Microorganism> microorganisms;   //№	Выделенные микроорганизмы	КОЕ/мл
+    private List<AntibioticGram> antibioticGrams;       //Антибиотикограмма
+    private String outMaterialDate;                     //Дата выдачи
+
+    public MedicalDocFile(FileDto file) {
+        super(file);
+        this.microorganisms = new LinkedList<>();
+        this.antibioticGrams = new LinkedList<>();
+    }
+
     @Override
     public String toString() {
         return super.getSizeKb() + " КБ - " + super.getFilename();
@@ -40,19 +50,15 @@ public class MedicalDocFile extends FileDto {
 
     @Override
     public Integer getCount() {
-        if (this.microorganisms == null || this.getStatus() != ProcessedStatus.SUCCESS) return 0;
-        return this.microorganisms.size();
-    }
-
-    private LinkedList<Microorganism> microorganisms;    //№	Выделенные микроорганизмы	КОЕ/мл
-    private List<AntibioticGram> antibioticGrams;       //Антибиотикограмма
-
-    private String outMaterialDate;                      //Дата выдачи
-
-    public MedicalDocFile(FileDto file) {
-        super(file);
-        this.microorganisms = new LinkedList<>();
-        this.antibioticGrams = new LinkedList<>();
+        if (CollectionUtils.isEmpty(this.microorganisms) ||
+            CollectionUtils.isEmpty(this.antibioticGrams) ||
+            this.getStatus() != ProcessedStatus.SUCCESS) {
+            return 0;
+        }
+        if (CollectionUtils.isEmpty(this.getAntibioticGrams().get(0).items)) {
+            return 0;
+        }
+        return this.getAntibioticGrams().get(0).items.get(0).size;
     }
 
     public void addAntibioticGram(String header) {
