@@ -34,7 +34,7 @@ public class FileHelper {
             log.info("Find files: {}", files.size());
             return files;
         } catch (IOException e) {
-            log.error("Failed to read files in folder{}: {}", path, e.getMessage());
+            log.error("Failed to read files in folder <{}> message: {}", path, e.getMessage());
             return Collections.emptyList();
         }
     }

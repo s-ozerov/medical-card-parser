@@ -31,7 +31,7 @@ class MedicalSheetFileHandlerTest {
     @Test
     @SneakyThrows
     public void test() {
-        String path = "C:\\Users\\Albion\\Desktop\\Июль\\тест";
+        String path = "C:\\Users\\Albion\\Desktop\\тест";
 //        String path = "C:\\Users\\Albion\\Desktop\\Июль";
         ProcessResponse<MedicalDocFile> content = medicalSheetFileHandler.readFile(path);
         Assertions.assertNotNull(content);

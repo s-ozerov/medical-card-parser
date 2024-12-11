@@ -1,5 +1,6 @@
 package ru.work.service.service.doc;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -19,16 +20,30 @@ import java.lang.reflect.Method;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
+import static org.apache.commons.lang3.StringUtils.containsAny;
+import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.apache.commons.lang3.StringUtils.remove;
+import static org.apache.commons.lang3.StringUtils.removeEnd;
 import static org.apache.commons.lang3.StringUtils.split;
+import static org.apache.commons.lang3.StringUtils.substring;
 
 @Slf4j
 @Component
 public class MedicalParserHelper implements ConvertDocToXlsx<MedicalDocFile> {
+
+    private static final String I = "I";
+    private static final String R = "R";
+    private static final String S = "S";
+    private static final String X = "-";
+    private static final String[] PARAMS = new String[]{I, R, S, X};
 
     @Override
     public MedicalDocFile readDoc(FileDto file) {
@@ -62,7 +77,7 @@ public class MedicalParserHelper implements ConvertDocToXlsx<MedicalDocFile> {
                 String outDateLine = parts.get(4).stream()
                         .map(l -> split(l, SEPARATOR_T))
                         .flatMap(Arrays::stream)
-                        .filter(l -> StringUtils.containsAny(l, ".2024", ".2025", ".2026", ".2027", ".2028", ".2029"))
+                        .filter(l -> containsAny(l, ".2024", ".2025", ".2026", ".2027", ".2028", ".2029"))
                         .findFirst().orElse(null);
                 if (StringUtils.isNotBlank(outDateLine)) {
                     info.setOutMaterialDate(clearSpaces(outDateLine));
@@ -143,14 +158,15 @@ public class MedicalParserHelper implements ConvertDocToXlsx<MedicalDocFile> {
             String header = null;
             boolean isSuccessPart3 = true;
             for (String row : parts.get(3)) {
-                if (StringUtils.containsAny(row, "[1]", "[2]", "[3]", "[4]", "**", "не имеет диагностического") ||
-                    StringUtils.isBlank(row)) {
+                if (containsAny(row, "[1]", "[2]", "[3]", "[4]", "**", "не имеет диагностического") ||
+                    isBlank(row)) {
                     continue;
                 }
                 String[] params = split(row, SEPARATOR_T);
                 if (params.length == 1) {
                     if (StringUtils.startsWithAny(row, "-", "S", "R", "I")) {
                         isSuccessPart3 = false;
+                        break;
                     }
                     header = params[0];
                     info.addAntibioticGram(header);
@@ -171,12 +187,16 @@ public class MedicalParserHelper implements ConvertDocToXlsx<MedicalDocFile> {
                     info.addAntibioticGramItem(header, name, results);
                 }
             }
-            if (CollectionUtils.isEmpty(info.getAntibioticGrams())) {
-                info.setFailed(ProcessedStatus.ANTI_NOT_FOUND, "Файл <%s> не подходит. Антибиотикограмма пуста. Размер файла %s КБ"
-                        .formatted(info.getFilename(), file.getSizeKb()));
-                return info;
-            }
             if (!isSuccessPart3) {
+                List<String> rows = processAntibioticGramsV2(parts.get(3), info);
+                if (CollectionUtils.isEmpty(rows)) {
+                    info.setFailed(ProcessedStatus.ANTI_NOT_FOUND, "Файл <%s> не подходит. Антибиотикограмма пуста. Размер файла %s КБ"
+                            .formatted(info.getFilename(), file.getSizeKb()));
+                    return info;
+                }
+
+            }
+            if (CollectionUtils.isEmpty(info.getAntibioticGrams())) {
                 info.setFailed(ProcessedStatus.ANTI_NOT_FOUND, "Файл <%s> не подходит. Антибиотикограмма пуста. Размер файла %s КБ"
                         .formatted(info.getFilename(), file.getSizeKb()));
                 return info;
@@ -194,5 +214,151 @@ public class MedicalParserHelper implements ConvertDocToXlsx<MedicalDocFile> {
             info.setFailed(status, errorMessage);
             return info;
         }
+    }
+
+    private List<String> processAntibioticGramsV2(List<String> rows, MedicalDocFile info) {
+        info.getAntibioticGrams().clear();
+
+        try {
+            AtomicReference<String> header = new AtomicReference<>();
+            AtomicReference<String> first = new AtomicReference<>();
+            LinkedList<String> filteredRows = rows.stream()
+                    .filter(r -> {
+                        if (isBlank(r) || containsAny(r, "[1]", "[2]", "[3]")) {
+                            return false;
+                        } else if (containsAny(r, "[4]")) {
+                            GramInfo gramInfo = prepare(r);
+                            if (gramInfo != null) {
+                                header.set(gramInfo.header);
+                                first.set(gramInfo.element);
+                            }
+                            return false;
+                        } else {
+                            return true;
+                        }
+                    })
+                    .map(this::clearSpaces)
+                    .collect(Collectors.toCollection(LinkedList::new));
+            if (first.get() == null || header.get() == null) {
+                return Collections.emptyList();
+            }
+            filteredRows.add(0, header.get());
+            filteredRows.add(1, first.get());
+
+            log.info("Prepare antibiotic gram by template v2 - {}", info.getFilename());
+            LinkedList<String> delimRowList = new LinkedList<>();
+            for (String row : filteredRows) {
+                int l = row.length();
+                if (l > 4) {
+                    String start = substring(row, 0, 4);
+                    String end = substring(row, l - 4, l);
+                    if (containsAny(end, PARAMS)) {
+                        List<String> splitWords = new LinkedList<>();
+                        char[] chars = row.toCharArray();
+                        StringBuilder builder = new StringBuilder();
+                        for (int i = 0; i < chars.length; i++) {
+                            if (i != 0 && Character.isUpperCase(chars[i]) && !(containsAny(String.valueOf(chars[i]), PARAMS))) {
+                                splitWords.add(builder.toString());
+                                builder = new StringBuilder();
+                                builder.append(chars[i]);
+                            } else if (i >= chars.length - 4 && containsAny(String.valueOf(chars[i]), PARAMS)) {
+                                splitWords.add(builder.toString());
+                                String params = row.substring(i, chars.length);
+                                for (Character c : params.toCharArray()) {
+                                    if (StringUtils.isNotBlank(String.valueOf(c))) {
+                                        splitWords.add(String.valueOf(c));
+                                    }
+                                }
+                                builder = null;
+                                break;
+                            } else {
+                                builder.append(chars[i]);
+                            }
+                        }
+
+                        if (builder != null) {
+                            splitWords.add(builder.toString());
+                        }
+                        delimRowList.addAll(splitWords);
+                    } else {
+                        String subRow = row;
+                        if (containsAny(start, PARAMS)) {
+                            char[] chars = row.toCharArray();
+                            int index = 0;
+                            String[] _params = Arrays.copyOf(PARAMS, PARAMS.length + 1);
+                            _params[PARAMS.length] = " ";
+                            while (containsAny(String.valueOf(chars[index]), _params)) {
+                                if (chars[index] != ' ') {
+                                    delimRowList.add(String.valueOf(chars[index]));
+                                }
+                                index++;
+                            }
+                            subRow = row.substring(index);
+                        }
+
+                        List<String> splitWords = new LinkedList<>();
+                        char[] chars = subRow.toCharArray();
+                        StringBuilder builder = new StringBuilder();
+                        for (int i = 0; i < chars.length; i++) {
+                            if (i != 0 && Character.isUpperCase(chars[i])) {
+                                if (chars[i] == 'М' && chars[i + 1] == 'П' && chars[i + 2] == 'К') {
+                                    builder.append(chars[i]).append(chars[i + 1]).append(chars[i + 2]);
+                                    i = i + 2;
+                                    continue;
+                                }
+                                splitWords.add(builder.toString());
+                                builder = new StringBuilder();
+                                builder.append(chars[i]);
+                            } else {
+                                builder.append(chars[i]);
+                            }
+                            if (i == chars.length - 1) {
+                                splitWords.add(builder.toString());
+                            }
+                        }
+                        delimRowList.addAll(splitWords);
+                    }
+                } else {
+                    if (containsAny(row, PARAMS)) {
+                        for (Character c : row.toCharArray()) {
+                            if (StringUtils.isNotBlank(String.valueOf(c))) {
+                                delimRowList.add(String.valueOf(c));
+                            }
+                        }
+                    } else {
+                        delimRowList.add(row);
+                    }
+                }
+            }
+
+            return delimRowList;
+        } catch (Exception e) {
+            log.error("Failed to parse antibiotic gram V2: %s. ".formatted(e.getMessage()), e);
+            return Collections.emptyList();
+        }
+    }
+
+    private GramInfo prepare(String row) {
+        char[] chars = row.toCharArray();
+        int last = -1;
+        for (int i = 0; i < chars.length; i++) {
+            if (Character.isUpperCase(chars[i])) {
+                last = i;
+            }
+        }
+        if (last != -1) {
+            String firstRow = row.substring(last, chars.length);
+            String header = clearSpaces(remove(removeEnd(row, firstRow), "[4]"));
+            return new GramInfo(header, firstRow);
+        } else {
+            log.error("Failed template V2: {}", row);
+            return null;
+        }
+    }
+
+    @RequiredArgsConstructor
+    private static class GramInfo {
+        public final String header;
+        public final String element;
     }
 }
