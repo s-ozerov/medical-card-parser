@@ -60,4 +60,8 @@ public class JavaFxApplication extends Application {
         System.exit(0);
     }
 
+    public static void setTheme(atlantafx.base.theme.Theme theme) {
+        Application.setUserAgentStylesheet(theme.getUserAgentStylesheet());
+    }
+
 }

@@ -1,0 +1,21 @@
+.list-cell:filled, .list-cell:filled {
+    -fx-background-color: white;
+    -fx-text-fill: #2874a6;
+    -fx-pref-height: 16;
+    -fx-font-size: 12px;
+    -fx-font-family: "Bookman Old Style"
+}
+
+.list-cell:empty {
+    -fx-background-color: white;
+}
+
+.list-cell:even {
+    -fx-background-color: white;
+    -fx-text-fill: #2874a6;
+}
+
+.list-cell:filled:hover {
+    -fx-background-color: white;
+    -fx-text-fill: #2874a6;
+}

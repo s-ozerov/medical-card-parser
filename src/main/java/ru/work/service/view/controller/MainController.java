@@ -1,8 +1,14 @@
 package ru.work.service.view.controller;
 
+import atlantafx.base.theme.PrimerDark;
+import atlantafx.base.theme.PrimerLight;
+import com.gluonhq.charm.glisten.control.ProgressBar;
 import javafx.application.Platform;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
+import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.stage.DirectoryChooser;
@@ -27,7 +33,6 @@ import ru.work.service.view.component.FileBox;
 import ru.work.service.view.factory.LogFactory;
 import ru.work.service.view.util.ControllerUtil;
 import ru.work.service.view.util.StageUtil;
-import ru.work.service.view.util.Theme;
 
 import java.io.File;
 import java.io.IOException;
@@ -42,6 +47,8 @@ import static java.util.Objects.nonNull;
 import static ru.work.service.dto.enums.Extension.DOC;
 import static ru.work.service.dto.enums.Extension.DOCX;
 import static ru.work.service.view.util.Constants.CURRENT_THEME;
+import static ru.work.service.view.util.Theme.DARK;
+import static ru.work.service.view.util.Theme.LIGHT;
 
 @Component
 @RequiredArgsConstructor
@@ -67,13 +74,13 @@ public class MainController {
     private Button showErrorsButton;
 
     @FXML
-    private Label openTitleLabel;
-    @FXML
-    private Label openNameLabel;
-    @FXML
     private Label countNameLabel;
     @FXML
     private Label countLabel;
+    @FXML
+    private ChoiceBox<String> themeBox;
+    @FXML
+    private ProgressBar loading;
 
     private final MedicalSheetFileHandler medicalHandler;
 
@@ -87,14 +94,28 @@ public class MainController {
     @FXML
     public void initialize() {
         countNameLabel.setVisible(false);
-        openTitleLabel.setVisible(false);
-        openNameLabel.setVisible(false);
 
         StageUtil.setWidthAndHeight(JavaFxApplication.WINDOW, 950, 590);
         _log = new LogFactory(this.getClass(), logView);
 
         initButtons();
         initListView();
+        ObservableList<String> themes = FXCollections.observableArrayList(DARK.name(), LIGHT.name());
+
+        setLogView(logView);
+
+        themeBox.setValue(CURRENT_THEME.name());
+        themeBox.setItems(themes);
+        themeBox.setOnAction(clickEvent -> {
+            if (themeBox.getValue().equalsIgnoreCase(DARK.name())) {
+                JavaFxApplication.setTheme(new PrimerDark());
+                CURRENT_THEME = DARK;
+            } else {
+                JavaFxApplication.setTheme(new PrimerLight());
+                CURRENT_THEME = LIGHT;
+            }
+            setLogView(logView);
+        });
     }
 
     private void initListView() {
@@ -131,8 +152,6 @@ public class MainController {
         startButton.setDisable(true);
 
         openButton.setOnAction(e -> {
-            openTitleLabel.setText("");
-            openNameLabel.setText("");
             File file = fileChooser.showOpenDialog(JavaFxApplication.WINDOW);
             if (file != null) {
                 String filename = file.getName();
@@ -142,30 +161,19 @@ public class MainController {
 
                 _log.info("Путь к файлу <%s>", path);
                 _log.info("Имя файла: %s", filename);
-                openTitleLabel.setText("Выбранный файл:");
-                openNameLabel.setText(filename);
-                openTitleLabel.setVisible(true);
-                openNameLabel.setVisible(true);
 
                 Extension extension = Extension.fromFile(filename);
-                String style;
                 if (!Extension.isDOC(extension)) {
                     startButton.setDisable(true);
                     downloadButton.setDisable(true);
                     _log.error("Не верный формат файла [%s]", Extension.get(filename));
                     file = null;
-                    style = openNameLabel.getStyle();
-                    openNameLabel.setStyle(style + "-fx-text-fill: red;");
-                } else if (CURRENT_THEME == Theme.WHITE) {
+                } else if (CURRENT_THEME == LIGHT) {
                     startButton.setDisable(false);
                     downloadButton.setDisable(true);
-                    style = openNameLabel.getStyle() + "-fx-text-fill: blue;";
-                    openNameLabel.setStyle(StringUtils.remove(style, "-fx-text-fill: red;"));
                 } else {
                     startButton.setDisable(false);
                     downloadButton.setDisable(true);
-                    style = openNameLabel.getStyle();
-                    openNameLabel.setStyle(StringUtils.remove(style, "-fx-text-fill: red;"));
                 }
 
                 FileDto currentFileInfo = FileHelper.buildFileInfo(file);
@@ -188,9 +196,6 @@ public class MainController {
 
         final DirectoryChooser directoryChooser = new DirectoryChooser();
         openMultipleButton.setOnAction(e -> {
-            openTitleLabel.setText("");
-            openNameLabel.setText("");
-
             final File selectedDirectory = directoryChooser.showDialog(JavaFxApplication.WINDOW);
             directoryChooser.setTitle("Выбор папки с файлами");
             directoryChooser.setInitialDirectory(new File(System.getProperty("user.home")));
@@ -200,20 +205,13 @@ public class MainController {
                 countNameLabel.setVisible(false);
                 countLabel.setText("");
                 showErrorsButton.setVisible(false);
-                openTitleLabel.setVisible(true);
-                openNameLabel.setVisible(true);
 
                 logDelim();
 
                 _log.info("Найдена папка: %s", selectedDirectory.getAbsolutePath());
-                openTitleLabel.setText("Выбранная папка:");
                 this.currentPath = selectedDirectory.getPath();
                 startButton.setDisable(false);
                 downloadButton.setDisable(true);
-                openNameLabel.setText(selectedDirectory.getPath());
-                if (CURRENT_THEME == Theme.WHITE) {
-                    openNameLabel.setStyle(openNameLabel.getStyle() + "-fx-text-fill: blue;");
-                }
             }
         });
 
@@ -294,6 +292,7 @@ public class MainController {
     }
 
     private void setFiles(ProcessResponse<MedicalDocFile> res) {
+        this.fileList.getItems().clear();
         List<MedicalDocFile> result = Stream.concat(res.getProcessedFiles().stream(), res.getErrorFiles().stream())
                 .sorted(Comparator.comparing(MedicalDocFile::getFilename))
                 .toList();
@@ -302,9 +301,20 @@ public class MainController {
         countLabel.setText(String.valueOf(this.fileList.getItems().size()));
     }
 
-    private void logDelim(){
-        if(!logView.getItems().isEmpty()){
+    private void logDelim() {
+        if (!logView.getItems().isEmpty()) {
             _log.info("=======================================================================");
+        }
+    }
+
+    private static void setLogView(ListView<String> logView) {
+        logView.getStylesheets().clear();
+        if (CURRENT_THEME == LIGHT) {
+            String styleSheet = "/ru/work/service/view/css/log-list-light.css";
+            logView.getStylesheets().add(styleSheet);
+        } else {
+            String styleSheet = "/ru/work/service/view/css/log-list-dark.css";
+            logView.getStylesheets().add(styleSheet);
         }
     }
 

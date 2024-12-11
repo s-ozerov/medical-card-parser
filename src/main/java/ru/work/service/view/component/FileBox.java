@@ -42,14 +42,11 @@ public class FileBox {
 
             window.initModality(Modality.APPLICATION_MODAL);
             window.setTitle(file.getFilename());
-            setWidthAndHeight(window, 650, 800);
+            setWidthAndHeight(window, 650, 700);
             window.getIcons().add(new Image(Constants.MAIN_ICO));
 
             TextArea textArea = new TextArea();
-            textArea.setMaxWidth(600);
-            textArea.setMinWidth(600);
-            textArea.setMinHeight(600);
-            textArea.setMaxHeight(700);
+            setWidthAndHeight(textArea, 600, 600);
             textArea.setEditable(false);
 
             StringBuilder builder = new StringBuilder();
@@ -149,12 +146,11 @@ public class FileBox {
 
             window.initModality(Modality.APPLICATION_MODAL);
             window.setTitle("Информация по обработке всех файлов");
-            setWidthAndHeight(window, 400, 400);
+            setWidthAndHeight(window, 450, 450);
             window.getIcons().add(new Image(Constants.MAIN_ICO));
 
             TextArea textArea = new TextArea();
-            textArea.setMinHeight(300);
-            textArea.setMaxHeight(380);
+            setWidthAndHeight(textArea, 370, 350);
             textArea.setEditable(false);
             textArea.setWrapText(true);
 
