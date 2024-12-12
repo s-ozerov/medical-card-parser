@@ -1,6 +1,5 @@
 package ru.work.service.service.doc;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -25,13 +24,11 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import static org.apache.commons.lang3.StringUtils.containsAny;
 import static org.apache.commons.lang3.StringUtils.isBlank;
-import static org.apache.commons.lang3.StringUtils.remove;
-import static org.apache.commons.lang3.StringUtils.removeEnd;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.apache.commons.lang3.StringUtils.split;
 import static org.apache.commons.lang3.StringUtils.substring;
 
@@ -43,7 +40,19 @@ public class MedicalParserHelper implements ConvertDocToXlsx<MedicalDocFile> {
     private static final String R = "R";
     private static final String S = "S";
     private static final String X = "-";
-    private static final String[] PARAMS = new String[]{I, R, S, X};
+    private static final String IX = "I/-";
+    private static final String RX = "R/-";
+    private static final String SX = "S/-";
+    private static final String XI = "-/I";
+    private static final String XR = "-/R";
+    private static final String XS = "-/S";
+    private static final String XX = "-/-";
+    private static final String II = "I/I";
+    private static final String RR = "R/R";
+    private static final String SS = "S/S";
+    private static final int sizeISRX = 3;
+    private static final String[] PARAMS = new String[]{I, R, S, X, IX, RX, SX, XI, XR, XS, XX, II, RR, SS};
+    //Романов В.А. пролежень крестец 02.05 .doc - /s
 
     @Override
     public MedicalDocFile readDoc(FileDto file) {
@@ -79,7 +88,7 @@ public class MedicalParserHelper implements ConvertDocToXlsx<MedicalDocFile> {
                         .flatMap(Arrays::stream)
                         .filter(l -> containsAny(l, ".2024", ".2025", ".2026", ".2027", ".2028", ".2029"))
                         .findFirst().orElse(null);
-                if (StringUtils.isNotBlank(outDateLine)) {
+                if (isNotBlank(outDateLine)) {
                     info.setOutMaterialDate(clearSpaces(outDateLine));
                 }
             }
@@ -121,16 +130,16 @@ public class MedicalParserHelper implements ConvertDocToXlsx<MedicalDocFile> {
                 }
             }
 
-            log.info("Добавляем микроорганизмы для <{}>", info.getFilename());
+//            log.info("Добавляем микроорганизмы для <{}>", info.getFilename());
             for (String row : parts.get(2)) {
                 String[] params = split(row, SEPARATOR_T);
                 if (params.length == 3 && params[0].startsWith("[")) {
                     var number = params[0];
                     var name = clearSpaces(params[1]);
                     var count = clearSpaces(params[2]);
-                    if (StringUtils.isNotBlank(name)) {
+                    if (isNotBlank(name)) {
                         info.addMicroorganism(name, count);
-                        log.debug("Микроорганизм: {} {} {}", number, info.getMicroorganisms().getLast().name, info.getMicroorganisms().getLast().count);
+//                        log.debug("Микроорганизм: {} {} {}", number, info.getMicroorganisms().getLast().name, info.getMicroorganisms().getLast().count);
                     }
                 }
             }
@@ -149,55 +158,89 @@ public class MedicalParserHelper implements ConvertDocToXlsx<MedicalDocFile> {
             }
 
             if (parts.get(3) == null) {
-                info.setFailed(ProcessedStatus.ANTI_NOT_FOUND, "Файл <%s> не подходит. Антибиотикограмма пуста. Размер файла %s КБ"
+                info.setFailed(ProcessedStatus.ANTI_V1_IS_EMPTY, "Файл <%s> не подходит. Антибиотикограмма пуста. Размер файла %s КБ"
                         .formatted(info.getFilename(), file.getSizeKb()));
                 return info;
             }
 
-            log.info("Добавляем антибиотикограмму для <{}>", info.getFilename());
+            log.info("Шаблон 1. Антибиотикограмма - {}", info.getFilename());
             String header = null;
-            boolean isSuccessPart3 = true;
-            for (String row : parts.get(3)) {
-                if (containsAny(row, "[1]", "[2]", "[3]", "[4]", "**", "не имеет диагностического") ||
-                    isBlank(row)) {
-                    continue;
-                }
-                String[] params = split(row, SEPARATOR_T);
-                if (params.length == 1) {
-                    if (StringUtils.startsWithAny(row, "-", "S", "R", "I")) {
-                        isSuccessPart3 = false;
-                        break;
+            boolean failedFirstTemplate = false;
+            try {
+                for (String row : parts.get(3)) {
+                    if (containsAny(row, "[1]", "[2]", "[3]", "[4]", "**", "не имеет диагностического") ||
+                        isBlank(row)) {
+                        continue;
                     }
-                    header = params[0];
-                    info.addAntibioticGram(header);
-                } else {
-                    if (params.length == 2) {
-                        var first = params[0].trim();
-                        var second = params[1].trim();
-                        if (first.equalsIgnoreCase(second)) {
-                            log.trace("Это баг. Задвоился header: {}", params[0]);
-                            continue;
+                    String[] params = split(row, SEPARATOR_T);
+                    if (params.length == 1) {
+                        if (StringUtils.startsWithAny(row, X, S, R, I)) {
+                            failedFirstTemplate = true;
+                            break;
                         }
+                        header = params[0];
+                        info.addAntibioticGram(header);
+                    } else {
+                        if (params.length == 2) {
+                            var first = params[0].trim();
+                            var second = params[1].trim();
+                            if (first.equalsIgnoreCase(second)) {
+                                log.trace("Это баг. Задвоился header: {}", params[0]);
+                                continue;
+                            }
+                        }
+                        LinkedList<String> results = Arrays.stream(Arrays.copyOfRange(params, 1, params.length))
+                                .map(this::clearSpaces)
+                                .map(String::toUpperCase)
+                                .collect(Collectors.toCollection(LinkedList::new));
+
+                        String name = clearDoubleSpaces(params[0]);
+                        info.addAntibioticGramItem(header, name, results);
                     }
-                    String[] results = Arrays.stream(Arrays.copyOfRange(params, 1, params.length))
-                            .map(this::clearSpaces)
-                            .toArray(String[]::new);
-
-                    String name = clearDoubleSpaces(params[0]);
-                    info.addAntibioticGramItem(header, name, results);
                 }
+            } catch (Exception e) {
+                log.error("Шаблон 1. Антибиотикограмма - <{}>: {}", info.getFilename(), e.getMessage());
+                info.setFailed(ProcessedStatus.ANTI_V1_FAILED, "Файл <%s> не подходит. Ошибка обработки: %s".formatted(info.getFilename(), e.getMessage()));
+                return info;
             }
-            if (!isSuccessPart3) {
-                List<String> rows = processAntibioticGramsV2(parts.get(3), info);
+
+            if (failedFirstTemplate) {
+                log.info("Шаблон 2. Антибиотикограмма - {}", info.getFilename());
+                List<String> rows = processAntibioticGramsV2(parts.get(3));
                 if (CollectionUtils.isEmpty(rows)) {
-                    info.setFailed(ProcessedStatus.ANTI_NOT_FOUND, "Файл <%s> не подходит. Антибиотикограмма пуста. Размер файла %s КБ"
-                            .formatted(info.getFilename(), file.getSizeKb()));
+                    info.setFailed(ProcessedStatus.ANTI_V2_FIRST_STEP, "Файл <%s> не подходит. Антибиотикограмма пустая".formatted(info.getFilename()));
                     return info;
-                }
+                } else {
+                    try {
+                        String aHeader = null;
+                        String aName = null;
+                        LinkedList<String> results = new LinkedList<>();
+                        for (int i = 0; i < rows.size(); i++) {
+                            String row = rows.get(i);
+                            if (rows.get(i).length() > sizeISRX && rows.get(i + 1).length() > sizeISRX) {
+                                aHeader = row;
+                                continue;
+                            } else if (rows.get(i).length() > sizeISRX) {
+                                aName = row;
+                                continue;
+                            }
 
+                            results.add(row);
+                            if (i + 1 == rows.size() || rows.get(i + 1).length() > sizeISRX || !containsAny(rows.get(i + 1), PARAMS)) {
+                                info.addAntibioticGramItem(aHeader, aName, results);
+                                results = new LinkedList<>();
+                            }
+                        }
+                    } catch (Exception e) {
+                        log.error("Шаблон 2. Антибиотикограмма - <{}>: {}", info.getFilename(), e.getMessage());
+                        info.setFailed(ProcessedStatus.ANTI_V2_SECOND_STEP, "Файл <%s> не подходит. Ошибка обработки: %s".formatted(info.getFilename(), e.getMessage()));
+                        return info;
+                    }
+                }
             }
+
             if (CollectionUtils.isEmpty(info.getAntibioticGrams())) {
-                info.setFailed(ProcessedStatus.ANTI_NOT_FOUND, "Файл <%s> не подходит. Антибиотикограмма пуста. Размер файла %s КБ"
+                info.setFailed(ProcessedStatus.ANTI_V1_IS_EMPTY, "Файл <%s> не подходит. Антибиотикограмма пуста. Размер файла %s КБ"
                         .formatted(info.getFilename(), file.getSizeKb()));
                 return info;
             }
@@ -216,38 +259,18 @@ public class MedicalParserHelper implements ConvertDocToXlsx<MedicalDocFile> {
         }
     }
 
-    private List<String> processAntibioticGramsV2(List<String> rows, MedicalDocFile info) {
-        info.getAntibioticGrams().clear();
-
+    private List<String> processAntibioticGramsV2(List<String> rows) {
         try {
-            AtomicReference<String> header = new AtomicReference<>();
-            AtomicReference<String> first = new AtomicReference<>();
             LinkedList<String> filteredRows = rows.stream()
-                    .filter(r -> {
-                        if (isBlank(r) || containsAny(r, "[1]", "[2]", "[3]")) {
-                            return false;
-                        } else if (containsAny(r, "[4]")) {
-                            GramInfo gramInfo = prepare(r);
-                            if (gramInfo != null) {
-                                header.set(gramInfo.header);
-                                first.set(gramInfo.element);
-                            }
-                            return false;
-                        } else {
-                            return true;
-                        }
-                    })
+                    .filter(r -> isNotBlank(r) && !containsAny(r, "[1]", "[2]", "[3]"))
                     .map(this::clearSpaces)
                     .collect(Collectors.toCollection(LinkedList::new));
-            if (first.get() == null || header.get() == null) {
-                return Collections.emptyList();
-            }
-            filteredRows.add(0, header.get());
-            filteredRows.add(1, first.get());
 
-            log.info("Prepare antibiotic gram by template v2 - {}", info.getFilename());
             LinkedList<String> delimRowList = new LinkedList<>();
             for (String row : filteredRows) {
+                if (containsAny(row, "4]")) {
+                    row = row.substring(row.lastIndexOf("]") + 1);
+                }
                 int l = row.length();
                 if (l > 4) {
                     String start = substring(row, 0, 4);
@@ -265,7 +288,7 @@ public class MedicalParserHelper implements ConvertDocToXlsx<MedicalDocFile> {
                                 splitWords.add(builder.toString());
                                 String params = row.substring(i, chars.length);
                                 for (Character c : params.toCharArray()) {
-                                    if (StringUtils.isNotBlank(String.valueOf(c))) {
+                                    if (isNotBlank(String.valueOf(c))) {
                                         splitWords.add(String.valueOf(c));
                                     }
                                 }
@@ -321,7 +344,7 @@ public class MedicalParserHelper implements ConvertDocToXlsx<MedicalDocFile> {
                 } else {
                     if (containsAny(row, PARAMS)) {
                         for (Character c : row.toCharArray()) {
-                            if (StringUtils.isNotBlank(String.valueOf(c))) {
+                            if (isNotBlank(String.valueOf(c))) {
                                 delimRowList.add(String.valueOf(c));
                             }
                         }
@@ -338,27 +361,4 @@ public class MedicalParserHelper implements ConvertDocToXlsx<MedicalDocFile> {
         }
     }
 
-    private GramInfo prepare(String row) {
-        char[] chars = row.toCharArray();
-        int last = -1;
-        for (int i = 0; i < chars.length; i++) {
-            if (Character.isUpperCase(chars[i])) {
-                last = i;
-            }
-        }
-        if (last != -1) {
-            String firstRow = row.substring(last, chars.length);
-            String header = clearSpaces(remove(removeEnd(row, firstRow), "[4]"));
-            return new GramInfo(header, firstRow);
-        } else {
-            log.error("Failed template V2: {}", row);
-            return null;
-        }
-    }
-
-    @RequiredArgsConstructor
-    private static class GramInfo {
-        public final String header;
-        public final String element;
-    }
 }

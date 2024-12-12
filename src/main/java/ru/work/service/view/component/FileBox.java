@@ -26,7 +26,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static ru.work.service.dto.enums.ProcessedStatus.ANTI_NOT_FOUND;
+import static ru.work.service.dto.enums.ProcessedStatus.ANTI_V1_FAILED;
+import static ru.work.service.dto.enums.ProcessedStatus.ANTI_V1_IS_EMPTY;
+import static ru.work.service.dto.enums.ProcessedStatus.ANTI_V2_FIRST_STEP;
+import static ru.work.service.dto.enums.ProcessedStatus.ANTI_V2_SECOND_STEP;
 import static ru.work.service.dto.enums.ProcessedStatus.FAILED_PROCESS;
 import static ru.work.service.dto.enums.ProcessedStatus.FAILED_READ;
 import static ru.work.service.dto.enums.ProcessedStatus.FILE_NO_TEMPLATE;
@@ -176,7 +179,10 @@ public class FileBox {
 
             builder.append("Выжимка по неподходящим файлам [%s]".formatted(errors.size())).append("\n");
             addLine(builder, errorsMap, MEDICAL_FILE_IS_EMPTY, false);
-            addLine(builder, errorsMap, ANTI_NOT_FOUND, false);
+            addLine(builder, errorsMap, ANTI_V1_IS_EMPTY, false);
+            addLine(builder, errorsMap, ANTI_V1_FAILED, true);
+            addLine(builder, errorsMap, ANTI_V2_FIRST_STEP, false);
+            addLine(builder, errorsMap, ANTI_V2_SECOND_STEP, true);
             addLine(builder, errorsMap, FILE_NO_TEMPLATE, false);
             addLine(builder, errorsMap, FAILED_READ, true);
             addLine(builder, errorsMap, FAILED_PROCESS, true);

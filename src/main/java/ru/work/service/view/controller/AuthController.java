@@ -79,7 +79,7 @@ public class AuthController {
         LocalDateTime time = currentTimeRestAdapter.getCurrentTime();
         if (time == null || time.isAfter(
                 LocalDateTime.of(
-                        LocalDate.of(2024, 12, 12),
+                        LocalDate.of(2024, 12, 28),
                         LocalTime.of(0, 0, 0)))) {
             authButton.setDisable(true);
             ExceptionBox.displayWarn("Информация", "Пробный период окончен!");

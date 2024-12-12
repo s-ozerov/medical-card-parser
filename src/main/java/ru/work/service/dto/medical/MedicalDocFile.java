@@ -65,11 +65,15 @@ public class MedicalDocFile extends FileDto {
         this.antibioticGrams.add(new AntibioticGram(header, new LinkedList<>()));
     }
 
-    public void addAntibioticGramItem(String header, String name, String[] result) {
+    public void addAntibioticGramItem(String header, String name, List<String> result) {
         AntibioticGram antibioticGram = this.antibioticGrams.stream()
                 .filter(a -> a.header.equalsIgnoreCase(header)).findFirst()
                 .orElse(new AntibioticGram(header, new LinkedList<>()));
+        boolean isNew = antibioticGram.items.isEmpty();
         antibioticGram.items.add(new AntibioticGram.AntibioticoGramItem(StringUtils.trim(name), result));
+        if (isNew) {
+            this.antibioticGrams.add(antibioticGram);
+        }
     }
 
     public void addMicroorganism(String name, String count) {
