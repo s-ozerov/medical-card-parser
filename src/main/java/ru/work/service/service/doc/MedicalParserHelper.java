@@ -51,8 +51,10 @@ public class MedicalParserHelper implements ConvertDocToXlsx<MedicalDocFile> {
     private static final String RR = "R/R";
     private static final String SS = "S/S";
     private static final int sizeISRX = 3;
+    private static final String NONE = "IRS-/";//new char[]{'I', 'R', 'S', '-', '/'};
     private static final String[] PARAMS = new String[]{I, R, S, X, IX, RX, SX, XI, XR, XS, XX, II, RR, SS};
-    //Романов В.А. пролежень крестец 02.05 .doc - /s
+    private static final String[] DRAFT_WORDS = new String[]{"[1]", "[2]", "[3]", "[4]", "**",
+            "не имеет диагностического", "*Определение чувствительности"};
 
     @Override
     public MedicalDocFile readDoc(FileDto file) {
@@ -66,7 +68,7 @@ public class MedicalParserHelper implements ConvertDocToXlsx<MedicalDocFile> {
             int partIndex = 0;
             Map<Integer, List<String>> parts = new HashMap<>();
             for (String row : templateRows) {
-                if (row.equalsIgnoreCase(SEPARATOR_T) || row.equalsIgnoreCase("*" + SEPARATOR_T)) {
+                if (row.equalsIgnoreCase(SEPARATOR_T) || row.equalsIgnoreCase("*" + SEPARATOR_T) /*|| row.equals(" ")*/) {
                     partIndex++;
                     continue;
                 }
@@ -130,16 +132,13 @@ public class MedicalParserHelper implements ConvertDocToXlsx<MedicalDocFile> {
                 }
             }
 
-//            log.info("Добавляем микроорганизмы для <{}>", info.getFilename());
             for (String row : parts.get(2)) {
                 String[] params = split(row, SEPARATOR_T);
                 if (params.length == 3 && params[0].startsWith("[")) {
-                    var number = params[0];
                     var name = clearSpaces(params[1]);
                     var count = clearSpaces(params[2]);
                     if (isNotBlank(name)) {
                         info.addMicroorganism(name, count);
-//                        log.debug("Микроорганизм: {} {} {}", number, info.getMicroorganisms().getLast().name, info.getMicroorganisms().getLast().count);
                     }
                 }
             }
@@ -158,50 +157,71 @@ public class MedicalParserHelper implements ConvertDocToXlsx<MedicalDocFile> {
             }
 
             if (parts.get(3) == null) {
+                //TODO проверить файлы
+                log.error("{} Антибиотикограмма в parts пустая", info.getFilename());
                 info.setFailed(ProcessedStatus.ANTI_V1_IS_EMPTY, "Файл <%s> не подходит. Антибиотикограмма пуста. Размер файла %s КБ"
                         .formatted(info.getFilename(), file.getSizeKb()));
                 return info;
             }
 
-            log.info("Шаблон 1. Антибиотикограмма - {}", info.getFilename());
-            String header = null;
-            boolean failedFirstTemplate = false;
-            try {
-                for (String row : parts.get(3)) {
-                    if (containsAny(row, "[1]", "[2]", "[3]", "[4]", "**", "не имеет диагностического") ||
-                        isBlank(row)) {
-                        continue;
+            boolean isFailedParse = false;
+            for (String row : parts.get(3)) {
+                row = row.replace(" ", "");
+                char[] chars = row.toCharArray();
+                for (int i = 0; i < chars.length - 2; i++) {
+                    if (StringUtils.containsAny(String.valueOf(chars[i]), NONE) &&
+                        StringUtils.containsAny(String.valueOf(chars[i + 1]), NONE) &&
+                        StringUtils.containsAny(String.valueOf(chars[i + 2]), NONE)) {
+                        isFailedParse = true;
                     }
-                    String[] params = split(row, SEPARATOR_T);
-                    if (params.length == 1) {
-                        if (StringUtils.startsWithAny(row, X, S, R, I)) {
-                            failedFirstTemplate = true;
-                            break;
-                        }
-                        header = params[0];
-                        info.addAntibioticGram(header);
-                    } else {
-                        if (params.length == 2) {
-                            var first = params[0].trim();
-                            var second = params[1].trim();
-                            if (first.equalsIgnoreCase(second)) {
-                                log.trace("Это баг. Задвоился header: {}", params[0]);
-                                continue;
-                            }
-                        }
-                        LinkedList<String> results = Arrays.stream(Arrays.copyOfRange(params, 1, params.length))
-                                .map(this::clearSpaces)
-                                .map(String::toUpperCase)
-                                .collect(Collectors.toCollection(LinkedList::new));
-
-                        String name = clearDoubleSpaces(params[0]);
-                        info.addAntibioticGramItem(header, name, results);
-                    }
+                    if (isFailedParse) break;
                 }
-            } catch (Exception e) {
-                log.error("Шаблон 1. Антибиотикограмма - <{}>: {}", info.getFilename(), e.getMessage());
-                info.setFailed(ProcessedStatus.ANTI_V1_FAILED, "Файл <%s> не подходит. Ошибка обработки: %s".formatted(info.getFilename(), e.getMessage()));
-                return info;
+                if (isFailedParse) break;
+            }
+
+            boolean failedFirstTemplate = false;
+            if (!isFailedParse) {
+                log.info("Шаблон 1. Антибиотикограмма - {}", info.getFilename());
+                String header = null;
+                try {
+                    for (String row : parts.get(3)) {
+                        if (containsAny(row, DRAFT_WORDS) ||
+                            isBlank(row)) {
+                            continue;
+                        }
+                        String[] params = split(row, SEPARATOR_T);
+                        if (params.length == 1) {
+                            if (StringUtils.startsWithAny(row, X, S, R, I)) {
+                                failedFirstTemplate = true;
+                                break;
+                            }
+                            header = clearSpaces(clearDoubleSpaces(params[0]));
+                        } else {
+                            if (params.length == 2) {
+                                var first = params[0].trim();
+                                var second = params[1].trim();
+                                if (first.equalsIgnoreCase(second)) {
+                                    log.trace("Это баг. Задвоился header: {}", params[0]);
+                                    continue;
+                                }
+                            }
+                            LinkedList<String> results = Arrays.stream(Arrays.copyOfRange(params, 1, params.length))
+                                    .map(this::clearSpaces)
+                                    .map(String::toUpperCase)
+                                    .collect(Collectors.toCollection(LinkedList::new));
+
+                            String name = clearSpaces(clearDoubleSpaces(params[0]));
+                            info.addAntibioticGramItem(header, name, results);
+                        }
+                    }
+                } catch (Exception e) {
+                    log.error("Шаблон 1. Антибиотикограмма - <{}>: {}", info.getFilename(), e.getMessage());
+                    info.setFailed(ProcessedStatus.ANTI_V1_FAILED, "Файл <%s> не подходит. Ошибка обработки: %s".formatted(info.getFilename(), e.getMessage()));
+                    return info;
+                }
+            } else {
+                log.error("Ошибка в парсинге файла: {}", info.getFilename());
+                //TODO посмотреть что с файлами и как можно решить проблему
             }
 
             if (failedFirstTemplate) {
