@@ -226,7 +226,7 @@ public class FileBox {
                 .append(errorsMap.get(status).size());
         if (printFileNames) {
             for (MedicalDocFile doc : errorsMap.get(status)) {
-                builder.append("\n").append(doc.getFilename());
+                builder.append("\n").append("\t-> ").append(doc.getFilename());
             }
         }
         builder.append("\n");

@@ -18,7 +18,9 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -31,6 +33,7 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.apache.commons.lang3.StringUtils.split;
 import static org.apache.commons.lang3.StringUtils.substring;
+import static ru.work.service.view.util.Constants.SMALL_FILE_SIZE;
 
 @Slf4j
 @Component
@@ -53,8 +56,8 @@ public class MedicalParserHelper implements ConvertDocToXlsx<MedicalDocFile> {
     private static final int sizeISRX = 3;
     private static final String NONE = "IRS-/";//new char[]{'I', 'R', 'S', '-', '/'};
     private static final String[] PARAMS = new String[]{I, R, S, X, IX, RX, SX, XI, XR, XS, XX, II, RR, SS};
-    private static final String[] DRAFT_WORDS = new String[]{"[1]", "[2]", "[3]", "[4]", "**",
-            "не имеет диагностического", "*Определение чувствительности"};
+    private static final String[] DRAFT_WORDS = new String[]{"[1]", "[2]", "[3]", "[4]", "[5]", "**",
+            "не имеет диагностического", "*Определение чувствительности", "Дата выдачи"};
 
     @Override
     public MedicalDocFile readDoc(FileDto file) {
@@ -65,18 +68,7 @@ public class MedicalParserHelper implements ConvertDocToXlsx<MedicalDocFile> {
             String template = clearParagraphsToText(we.getText()).toString();
             List<String> templateRows = Arrays.stream(split(template, SEPARATOR_RN)).toList();
 
-            int partIndex = 0;
-            Map<Integer, List<String>> parts = new HashMap<>();
-            for (String row : templateRows) {
-                if (row.equalsIgnoreCase(SEPARATOR_T) || row.equalsIgnoreCase("*" + SEPARATOR_T) /*|| row.equals(" ")*/) {
-                    partIndex++;
-                    continue;
-                }
-                if (CollectionUtils.isEmpty(parts.get(partIndex))) {
-                    parts.put(partIndex, new LinkedList<>());
-                }
-                parts.get(partIndex).add(row);
-            }
+            Map<Integer, List<String>> parts = getParts(templateRows);
 
             MedicalDocFile info = new MedicalDocFile(file);
             if (parts.isEmpty()) {
@@ -157,8 +149,13 @@ public class MedicalParserHelper implements ConvertDocToXlsx<MedicalDocFile> {
             }
 
             if (parts.get(3) == null) {
-                //TODO проверить файлы
-                log.error("{} Антибиотикограмма в parts пустая", info.getFilename());
+                //TODO проверить сами файлы, что в них
+                if (info.getSizeKb().compareTo(SMALL_FILE_SIZE) < 0) {
+                    log.info("<{}> Антибиотикограмма в parts пустая", info.getFilename());
+                } else {
+                    log.error("<{}> Антибиотикограмма в parts пустая. Размер файла: {}", info.getFilename(), info.getSizeKb());
+                }
+
                 info.setFailed(ProcessedStatus.ANTI_V1_IS_EMPTY, "Файл <%s> не подходит. Антибиотикограмма пуста. Размер файла %s КБ"
                         .formatted(info.getFilename(), file.getSizeKb()));
                 return info;
@@ -215,42 +212,54 @@ public class MedicalParserHelper implements ConvertDocToXlsx<MedicalDocFile> {
                         }
                     }
                 } catch (Exception e) {
-                    log.error("Шаблон 1. Антибиотикограмма - <{}>: {}", info.getFilename(), e.getMessage());
+                    log.error("Шаблон 1 - ошибка. Антибиотикограмма - <{}>: {}", info.getFilename(), e.getMessage());
                     info.setFailed(ProcessedStatus.ANTI_V1_FAILED, "Файл <%s> не подходит. Ошибка обработки: %s".formatted(info.getFilename(), e.getMessage()));
                     return info;
                 }
             } else {
-                log.error("Ошибка в парсинге файла: {}", info.getFilename());
-                //TODO посмотреть что с файлами и как можно решить проблему
+                try {
+                    log.info("Пробуем ещё раз. Не удачно отработан шаблон 1 для файла: {}", info.getFilename());
+                    List<String> rowsV2 = Arrays.stream(we.getParagraphText())
+                            .map(r -> clearSpaces(r.trim()))
+                            .filter(r -> isNotBlank(r) && !containsAny(r, "[1]", "[2]", "[3]", "[4]", "[5]", "[6]", "[7]"))
+                            .toList();
+                    if (!rowsV2.isEmpty()) {
+                        List<String> antiGramInfo = new ArrayList<>();
+                        boolean added = false;
+                        for (String s : rowsV2) {
+                            if (StringUtils.startsWithIgnoreCase(s, "антибиотикограмма")) {
+                                added = true;
+                                continue;
+                            }
+                            if (StringUtils.startsWithIgnoreCase(s, "дата выдачи")) {
+                                break;
+                            }
+                            if (added) {
+                                antiGramInfo.add(s);
+                            }
+                        }
+                        if (!antiGramInfo.isEmpty()) {
+                            fillAntiGram(antiGramInfo, info);
+                            log.info("Удачная повторная попытка для шаблона 1");
+                        }
+                    }
+                } catch (Exception e) {
+                    log.error("failed: {}", e.getMessage());
+                    failedFirstTemplate = true;
+                }
             }
 
             if (failedFirstTemplate) {
+                //TODO проверить Колистин,К ≤ 1мг/л почему-то пропадает МПК
                 log.info("Шаблон 2. Антибиотикограмма - {}", info.getFilename());
-                List<String> rows = processAntibioticGramsV2(parts.get(3));
-                if (CollectionUtils.isEmpty(rows)) {
+                info.getAntibioticGrams().clear();
+                List<String> antiGramInfo = processAntibioticGramsV2(parts.get(3));
+                if (CollectionUtils.isEmpty(antiGramInfo)) {
                     info.setFailed(ProcessedStatus.ANTI_V2_FIRST_STEP, "Файл <%s> не подходит. Антибиотикограмма пустая".formatted(info.getFilename()));
                     return info;
                 } else {
                     try {
-                        String aHeader = null;
-                        String aName = null;
-                        LinkedList<String> results = new LinkedList<>();
-                        for (int i = 0; i < rows.size(); i++) {
-                            String row = rows.get(i);
-                            if (rows.get(i).length() > sizeISRX && rows.get(i + 1).length() > sizeISRX) {
-                                aHeader = row;
-                                continue;
-                            } else if (rows.get(i).length() > sizeISRX) {
-                                aName = row;
-                                continue;
-                            }
-
-                            results.add(row);
-                            if (i + 1 == rows.size() || rows.get(i + 1).length() > sizeISRX || !containsAny(rows.get(i + 1), PARAMS)) {
-                                info.addAntibioticGramItem(aHeader, aName, results);
-                                results = new LinkedList<>();
-                            }
-                        }
+                        fillAntiGram(antiGramInfo, info);
                     } catch (Exception e) {
                         log.error("Шаблон 2. Антибиотикограмма - <{}>: {}", info.getFilename(), e.getMessage());
                         info.setFailed(ProcessedStatus.ANTI_V2_SECOND_STEP, "Файл <%s> не подходит. Ошибка обработки: %s".formatted(info.getFilename(), e.getMessage()));
@@ -279,11 +288,28 @@ public class MedicalParserHelper implements ConvertDocToXlsx<MedicalDocFile> {
         }
     }
 
+    private Map<Integer, List<String>> getParts(Collection<String> template) {
+        int partIndex = 0;
+        Map<Integer, List<String>> parts = new HashMap<>();
+        for (String row : template) {
+            if (row.equalsIgnoreCase(SEPARATOR_T) || row.equalsIgnoreCase("*" + SEPARATOR_T)) {
+                partIndex++;
+                continue;
+            }
+            if (CollectionUtils.isEmpty(parts.get(partIndex))) {
+                parts.put(partIndex, new LinkedList<>());
+            }
+            parts.get(partIndex).add(row);
+        }
+        return parts;
+    }
+
     private List<String> processAntibioticGramsV2(List<String> rows) {
         try {
             LinkedList<String> filteredRows = rows.stream()
-                    .filter(r -> isNotBlank(r) && !containsAny(r, "[1]", "[2]", "[3]"))
+                    .map(r -> r.replace("*", ""))
                     .map(this::clearSpaces)
+                    .filter(r -> isNotBlank(r) && !containsAny(r, "[1]", "[2]", "[3]"))
                     .collect(Collectors.toCollection(LinkedList::new));
 
             LinkedList<String> delimRowList = new LinkedList<>();
@@ -378,6 +404,28 @@ public class MedicalParserHelper implements ConvertDocToXlsx<MedicalDocFile> {
         } catch (Exception e) {
             log.error("Failed to parse antibiotic gram V2: %s. ".formatted(e.getMessage()), e);
             return Collections.emptyList();
+        }
+    }
+
+    private static void fillAntiGram(List<String> rows, MedicalDocFile info) {
+        String aHeader = null;
+        String aName = null;
+        LinkedList<String> results = new LinkedList<>();
+        for (int i = 0; i < rows.size() - 1; i++) {
+            String row = rows.get(i);
+            if (rows.get(i).length() > sizeISRX && rows.get(i + 1).length() > sizeISRX) {
+                aHeader = row;
+                continue;
+            } else if (rows.get(i).length() > sizeISRX) {
+                aName = row;
+                continue;
+            }
+
+            results.add(row);
+            if (i + 1 == rows.size() || rows.get(i + 1).length() > sizeISRX || !containsAny(rows.get(i + 1), PARAMS)) {
+                info.addAntibioticGramItem(aHeader, aName, results);
+                results = new LinkedList<>();
+            }
         }
     }
 

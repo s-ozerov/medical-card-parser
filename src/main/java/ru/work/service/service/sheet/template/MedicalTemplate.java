@@ -1,9 +1,7 @@
 package ru.work.service.service.sheet.template;
 
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -26,11 +24,13 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import static ru.work.service.helper.FileHelper.calculateSize;
 import static ru.work.service.service.sheet.SheetStyle.createHeaderTableCellsStyle;
 import static ru.work.service.service.sheet.SheetStyle.createStandardTableCellsStyle;
+import static ru.work.service.view.util.Constants.SMALL_FILE_SIZE;
 
 @Slf4j
 @Component
@@ -40,7 +40,6 @@ public class MedicalTemplate implements SheetTemplate<MedicalDocFile> {
     private final MedicalParserHelper parserHelper;
     private final MedicalTemplateProperties properties;
 
-    @Getter
     private final Map<String, List<AntibioticGram.AntibioticoGramItem>> notFound = new HashMap<>();
 
     @Override
@@ -49,29 +48,30 @@ public class MedicalTemplate implements SheetTemplate<MedicalDocFile> {
             return new ProcessResponse<>();
         }
 
+        AtomicReference<Integer> countSmall = new AtomicReference<>(0);
         List<MedicalDocFile> docFiles = files.stream()
-                .map(parserHelper::readDoc)
+                .map(file -> {
+                    MedicalDocFile doc = parserHelper.readDoc(file);
+                    if (doc != null && doc.getSizeKb().compareTo(SMALL_FILE_SIZE) < 0) {
+                        countSmall.set(countSmall.get() + 1);
+                    }
+                    return doc;
+                })
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
+        log.info("Файлов с размеров меньше {} кб: {}", SMALL_FILE_SIZE, countSmall.get());
         notFound.clear();
         return new ProcessResponse<>(docFiles);
     }
 
     @Override
     public DownloadDto prepare(String downloadFilename, ByteArrayOutputStream xlsxContent) {
-        if (!CollectionUtils.isEmpty(notFound)) {
-            for (Map.Entry<String, List<AntibioticGram.AntibioticoGramItem>> entry : notFound.entrySet()) {
-                if (!CollectionUtils.isEmpty(entry.getValue())) {
-                    log.error("Не удалось найти колонки для <{}>: {}", entry.getKey(), StringUtils.join(entry.getValue().stream().map(s -> s.name).collect(Collectors.toSet()), ","));
-                }
-            }
-        }
-
         byte[] bytes = xlsxContent.toByteArray();
         DownloadDto download = DownloadDto.builder()
                 .filename(downloadFilename)
                 .content(new ByteArrayInputStream(bytes))
                 .sizeKb(calculateSize(bytes.length))
+                .notFound(notFound)
                 .build();
 
         try {

@@ -24,6 +24,7 @@ import ru.work.service.dto.FileDto;
 import ru.work.service.dto.ProcessResponse;
 import ru.work.service.dto.enums.Extension;
 import ru.work.service.dto.enums.ProcessedStatus;
+import ru.work.service.dto.medical.AntibioticGram;
 import ru.work.service.dto.medical.MedicalDocFile;
 import ru.work.service.helper.FileHelper;
 import ru.work.service.service.sheet.MedicalSheetFileHandler;
@@ -40,6 +41,8 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.Objects.isNull;
@@ -283,6 +286,13 @@ public class MainController {
                         _log.error("Не удалось сохранить файл <%s>. Ошибка: %s", saveFile.getName(), ex.getMessage());
                     }
                     _log.info("Файл успешно преобразован и сохранён <%s>", saveFile.getName());
+                    if (!CollectionUtils.isEmpty(downloadDto.getNotFound())) {
+                        for (Map.Entry<String, List<AntibioticGram.AntibioticoGramItem>> entry : downloadDto.getNotFound().entrySet()) {
+                            if (!CollectionUtils.isEmpty(entry.getValue())) {
+                                _log.error("Не удалось найти колонки для <%s>: %s", entry.getKey(), StringUtils.join(entry.getValue().stream().map(s -> s.name).collect(Collectors.toSet()), ","));
+                            }
+                        }
+                    }
                 }
             } else {
                 _log.error("Д");
