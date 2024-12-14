@@ -198,25 +198,25 @@ public class MainController {
         });
 
         final DirectoryChooser directoryChooser = new DirectoryChooser();
-        openMultipleButton.setOnAction(e -> {
-            final File selectedDirectory = directoryChooser.showDialog(JavaFxApplication.WINDOW);
-            directoryChooser.setTitle("Выбор папки с файлами");
-            directoryChooser.setInitialDirectory(new File(System.getProperty("user.home")));
-            if (selectedDirectory != null) {
-                this.currentFileInfo = null;
-                this.fileList.getItems().clear();
-                countNameLabel.setVisible(false);
-                countLabel.setText("");
-                showErrorsButton.setVisible(false);
-
-                logDelim();
-
-                _log.info("Найдена папка: %s", selectedDirectory.getAbsolutePath());
-                this.currentPath = selectedDirectory.getPath();
-                startButton.setDisable(false);
-                downloadButton.setDisable(true);
-            }
-        });
+//        openMultipleButton.setOnAction(e -> {
+//            final File selectedDirectory = directoryChooser.showDialog(JavaFxApplication.WINDOW);
+//            directoryChooser.setTitle("Выбор папки с файлами");
+//            directoryChooser.setInitialDirectory(new File(System.getProperty("user.home")));
+//            if (selectedDirectory != null) {
+//                this.currentFileInfo = null;
+//                this.fileList.getItems().clear();
+//                countNameLabel.setVisible(false);
+//                countLabel.setText("");
+//                showErrorsButton.setVisible(false);
+//
+//                logDelim();
+//
+//                _log.info("Найдена папка: %s", selectedDirectory.getAbsolutePath());
+//                this.currentPath = selectedDirectory.getPath();
+//                startButton.setDisable(false);
+//                downloadButton.setDisable(true);
+//            }
+//        });
 
         clearLogButton.setOnAction(e -> {
             logView.getItems().clear();
