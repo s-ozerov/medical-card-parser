@@ -11,13 +11,4 @@ public class MedicalCardServiceApplication {
         Application.launch(JavaFxApplication.class, args);
     }
 
-//@@echo on
-//
-//FOR %%F IN (.\*.jar) DO (
-// set filename=%%F
-// goto run
-//)
-//
-//:run
-//start jre21windows\bin\javaw.exe -jar "%filename%"
 }
