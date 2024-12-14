@@ -281,17 +281,21 @@ public class MainController {
                     _log.info("Преобразуем содержимое файла/файлов в XLSX формат по пути <%s>", saveFile.getAbsolutePath());
                     DownloadDto downloadDto = medicalHandler.convertDOCToXLSX(downloadFilename, processedFiles);
                     try {
-                        FileUtils.copyInputStreamToFile(downloadDto.getContent(), saveFile);
-                    } catch (IOException ex) {
-                        _log.error("Не удалось сохранить файл <%s>. Ошибка: %s", saveFile.getName(), ex.getMessage());
-                    }
-                    _log.info("Файл успешно преобразован и сохранён <%s>", saveFile.getName());
-                    if (!CollectionUtils.isEmpty(downloadDto.getNotFound())) {
-                        for (Map.Entry<String, List<AntibioticGram.AntibioticoGramItem>> entry : downloadDto.getNotFound().entrySet()) {
-                            if (!CollectionUtils.isEmpty(entry.getValue())) {
-                                _log.error("Не удалось найти колонки для <%s>: %s", entry.getKey(), StringUtils.join(entry.getValue().stream().map(s -> s.name).collect(Collectors.toSet()), ","));
+                        if (downloadDto == null) {
+                            _log.error("Не удалось сохранить файл <%s>. Ошибка: %s", saveFile.getName(), "выбранный doc файл не обработан");
+                        } else {
+                            FileUtils.copyInputStreamToFile(downloadDto.getContent(), saveFile);
+                            _log.info("Файл успешно преобразован и сохранён <%s>", saveFile.getName());
+                            if (!CollectionUtils.isEmpty(downloadDto.getNotFound())) {
+                                for (Map.Entry<String, List<AntibioticGram.AntibioticoGramItem>> entry : downloadDto.getNotFound().entrySet()) {
+                                    if (!CollectionUtils.isEmpty(entry.getValue())) {
+                                        _log.error("Не удалось найти колонки для <%s>: %s", entry.getKey(), StringUtils.join(entry.getValue().stream().map(s -> s.name).collect(Collectors.toSet()), ","));
+                                    }
+                                }
                             }
                         }
+                    } catch (IOException ex) {
+                        _log.error("Не удалось сохранить файл <%s>. Ошибка: %s", saveFile.getName(), ex.getMessage());
                     }
                 }
             } else {

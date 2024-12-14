@@ -2,8 +2,13 @@ package ru.work.service.service.sheet.template;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.CreationHelper;
+import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.xssf.usermodel.XSSFDrawing;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
@@ -41,6 +46,7 @@ public class MedicalTemplate implements SheetTemplate<MedicalDocFile> {
     private final MedicalTemplateProperties properties;
 
     private final Map<String, List<AntibioticGram.AntibioticoGramItem>> notFound = new HashMap<>();
+    private final Map<Sheet, XSSFDrawing> drawingMap = new HashMap<>();
 
     @Override
     public ProcessResponse<MedicalDocFile> read(List<FileDto> files) {
@@ -86,8 +92,14 @@ public class MedicalTemplate implements SheetTemplate<MedicalDocFile> {
 
     @Override
     public void buildRowHeaders(XSSFWorkbook workbook, Sheet sheet) {
+        XSSFDrawing drawing = drawingMap.get(sheet);
+        if (drawing == null) {
+            drawing = ((XSSFSheet) sheet).createDrawingPatriarch();
+            drawingMap.put(sheet, drawing);
+        }
+
         CellStyle headerTableStyle = createHeaderTableCellsStyle(workbook);
-        var row = sheet.createRow(sheet.getLastRowNum() + 1);
+        Row row = buildRow(sheet);
 
         addCell(row, "Месяц", headerTableStyle);
         SheetStyle.setLastCollWidth(sheet, 16);
@@ -106,9 +118,10 @@ public class MedicalTemplate implements SheetTemplate<MedicalDocFile> {
             SheetStyle.setLastCollWidth(sheet, 48);
         }
 
-        for (Map.Entry<String, List<String>> column : properties.getColumns().entrySet()) {
+        CreationHelper createHelper = sheet.getWorkbook().getCreationHelper();
+        for (Map.Entry<String, LinkedList<String>> column : properties.getColumns().entrySet()) {
             String cellValue = column.getKey().replace("_", "/");
-            addCell(row, cellValue, headerTableStyle);
+            Cell cell = addCellWithComment(createHelper, drawing, column.getValue().getFirst(), row, cellValue, headerTableStyle);
             SheetStyle.setLastCollWidthAuto(sheet);
         }
     }
@@ -140,7 +153,7 @@ public class MedicalTemplate implements SheetTemplate<MedicalDocFile> {
                 addCell(row, doc.getFilename(), cellTableStyle);
             }
 
-            for (Map.Entry<String, List<String>> column : properties.getColumns().entrySet()) {
+            for (Map.Entry<String, LinkedList<String>> column : properties.getColumns().entrySet()) {
                 AntibioticGram.AntibioticoGramItem anti = items.stream()
                         .filter(a -> column.getValue().stream().anyMatch(val -> val.equalsIgnoreCase(a.name)))
                         .findFirst().orElse(null);

@@ -1,10 +1,14 @@
 package ru.work.service.service.sheet.template;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.poi.hssf.usermodel.HSSFClientAnchor;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.Comment;
+import org.apache.poi.ss.usermodel.CreationHelper;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.xssf.usermodel.XSSFDrawing;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import ru.work.service.dto.DownloadDto;
 import ru.work.service.dto.FileDto;
@@ -26,7 +30,22 @@ public interface SheetTemplate<T extends FileDto> {
 
     void buildRowData(XSSFWorkbook workbook, Sheet sheet, T doc);
 
-    default <O> void addCell(Row row, O value, CellStyle style) {
+    default Row buildRow(Sheet sheet) {
+        return sheet.createRow(sheet.getLastRowNum() + 1);
+    }
+
+    default <O> Cell addCellWithComment(CreationHelper createHelper, XSSFDrawing drawing, String comment,
+                                        Row row, O value, CellStyle style) {
+        Comment comm = drawing.createCellComment(new HSSFClientAnchor(0, 0, 0, 0, (short) 4, 2, (short) 6, 5));
+        comm.setString(createHelper.createRichTextString(comment));
+        comm.setAuthor("system");
+
+        Cell cell = addCell(row, value, style);
+        cell.setCellComment(comm);
+        return cell;
+    }
+
+    default <O> Cell addCell(Row row, O value, CellStyle style) {
         int last = row.getLastCellNum();
 
         Cell cell;
@@ -51,6 +70,6 @@ public interface SheetTemplate<T extends FileDto> {
                 cell.setCellValue(value.toString());
             }
         }
+        return cell;
     }
-
 }

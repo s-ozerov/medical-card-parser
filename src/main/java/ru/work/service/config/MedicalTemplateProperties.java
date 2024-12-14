@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -14,7 +15,7 @@ import java.util.TreeMap;
 public class MedicalTemplateProperties {
 
     private String key;
-    private Map<String, List<String>> columns = new TreeMap<>();
+    private Map<String, LinkedList<String>> columns = new TreeMap<>();
     private ColumnEnabled columnEnabled;
 
     @Setter
