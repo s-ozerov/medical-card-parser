@@ -33,7 +33,7 @@ class MedicalSheetFileHandlerTest {
     public void test() {
         String path = "C:\\Users\\Albion\\Desktop\\тест";
 //        String path = "C:\\Users\\Albion\\Desktop\\Июль";
-        ProcessResponse<MedicalDocFile> content = medicalSheetFileHandler.readFile(path);
+        ProcessResponse<MedicalDocFile> content = medicalSheetFileHandler.readFiles(path, null, null);
         Assertions.assertNotNull(content);
 
         String filename = DateTimeFormatter.ofPattern("dd MMMM HH-mm-ss").format(LocalDateTime.now()) + ".xlsx";

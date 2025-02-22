@@ -1,5 +1,7 @@
 package ru.work.service.service.sheet;
 
+import javafx.scene.control.Label;
+import javafx.scene.control.ProgressBar;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import ru.work.service.dto.DownloadDto;
@@ -22,12 +24,15 @@ public abstract class AbstractFileHandler<T extends FileDto> {
     }
 
     public ProcessResponse<T> readFile(FileDto file) {
-        return sheetTemplate.read(Collections.singletonList(file));
+        return sheetTemplate.read(Collections.singletonList(file), null, null);
     }
 
-    public ProcessResponse<T> readFile(String path) {
+    public ProcessResponse<T> readFiles(String path, ProgressBar progressBar, Label loadingText) {
         List<FileDto> files = FileHelper.getFilesDOCorDOCXByPatch(path);
-        return sheetTemplate.read(files);
+        if (progressBar == null) {
+            progressBar = new ProgressBar(files.size());
+        }
+        return sheetTemplate.read(files, progressBar, loadingText);
     }
 
     protected DownloadDto convert(String downloadFilename, XSSFWorkbook workbook, Sheet sheet, ProcessResponse<T> files) throws IOException {

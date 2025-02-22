@@ -1,0 +1,19 @@
+/* Стиль для Label */
+.label {
+    -fx-font-weight: bold; /* Жирный шрифт */
+    -fx-font-size: 14px;   /* Размер шрифта */
+    -fx-text-fill: #3e3e3e;
+}
+
+/* Стиль для ProgressBar */
+.progress-bar {
+    -fx-accent: #4CAF50;
+}
+
+.progress-bar .track {
+    -fx-background-color: #e0e0e0;
+}
+
+.progress-bar .bar {
+    -fx-background-color: #4CAF50;
+}

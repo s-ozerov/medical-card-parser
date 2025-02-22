@@ -2,7 +2,6 @@ package ru.work.service.view.controller;
 
 import atlantafx.base.theme.PrimerDark;
 import atlantafx.base.theme.PrimerLight;
-import com.gluonhq.charm.glisten.control.ProgressBar;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -11,9 +10,13 @@ import javafx.scene.control.Button;
 import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
+import javafx.scene.control.ProgressBar;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import net.rgielen.fxweaver.core.FxmlView;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -29,11 +32,11 @@ import ru.work.service.dto.medical.MedicalDocFile;
 import ru.work.service.helper.FileHelper;
 import ru.work.service.service.sheet.MedicalSheetFileHandler;
 import ru.work.service.view.JavaFxApplication;
+import ru.work.service.view.component.DownloadComponent;
 import ru.work.service.view.component.ExceptionBox;
 import ru.work.service.view.component.FileBox;
 import ru.work.service.view.factory.LogFactory;
 import ru.work.service.view.util.ControllerUtil;
-import ru.work.service.view.util.StageUtil;
 
 import java.io.File;
 import java.io.IOException;
@@ -42,6 +45,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -53,6 +57,7 @@ import static ru.work.service.view.util.Constants.CURRENT_THEME;
 import static ru.work.service.view.util.Theme.DARK;
 import static ru.work.service.view.util.Theme.LIGHT;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 @FxmlView("main.fxml")
@@ -82,12 +87,11 @@ public class MainController {
     private Label countLabel;
     @FXML
     private ChoiceBox<String> themeBox;
-    @FXML
-    private ProgressBar loading;
 
     private final MedicalSheetFileHandler medicalHandler;
+    private final DownloadComponent downloadComponent;
 
-    private volatile LogFactory _log;
+    private LogFactory _log;
     private FileDto currentFileInfo;
     private String currentPath;
 
@@ -96,16 +100,16 @@ public class MainController {
 
     @FXML
     public void initialize() {
+        setThemeClearButton();
         countNameLabel.setVisible(false);
 
-        StageUtil.setWidthAndHeight(JavaFxApplication.WINDOW, 950, 590);
         _log = new LogFactory(this.getClass(), logView);
 
         initButtons();
         initListView();
         ObservableList<String> themes = FXCollections.observableArrayList(DARK.name(), LIGHT.name());
 
-        setLogView(logView);
+        setThemeLogView(logView);
 
         themeBox.setValue(CURRENT_THEME.name());
         themeBox.setItems(themes);
@@ -117,7 +121,7 @@ public class MainController {
                 JavaFxApplication.setTheme(new PrimerLight());
                 CURRENT_THEME = LIGHT;
             }
-            setLogView(logView);
+            setThemeLogView(logView);
         });
     }
 
@@ -198,25 +202,25 @@ public class MainController {
         });
 
         final DirectoryChooser directoryChooser = new DirectoryChooser();
-//        openMultipleButton.setOnAction(e -> {
-//            final File selectedDirectory = directoryChooser.showDialog(JavaFxApplication.WINDOW);
-//            directoryChooser.setTitle("Выбор папки с файлами");
-//            directoryChooser.setInitialDirectory(new File(System.getProperty("user.home")));
-//            if (selectedDirectory != null) {
-//                this.currentFileInfo = null;
-//                this.fileList.getItems().clear();
-//                countNameLabel.setVisible(false);
-//                countLabel.setText("");
-//                showErrorsButton.setVisible(false);
-//
-//                logDelim();
-//
-//                _log.info("Найдена папка: %s", selectedDirectory.getAbsolutePath());
-//                this.currentPath = selectedDirectory.getPath();
-//                startButton.setDisable(false);
-//                downloadButton.setDisable(true);
-//            }
-//        });
+        openMultipleButton.setOnAction(e -> {
+            final File selectedDirectory = directoryChooser.showDialog(JavaFxApplication.WINDOW);
+            directoryChooser.setTitle("Выбор папки с файлами");
+            directoryChooser.setInitialDirectory(new File(System.getProperty("user.home")));
+            if (selectedDirectory != null) {
+                this.currentFileInfo = null;
+                this.fileList.getItems().clear();
+                countNameLabel.setVisible(false);
+                countLabel.setText("");
+                showErrorsButton.setVisible(false);
+
+                logDelim();
+
+                _log.info("Найдена папка: %s", selectedDirectory.getAbsolutePath());
+                this.currentPath = selectedDirectory.getPath();
+                startButton.setDisable(false);
+                downloadButton.setDisable(true);
+            }
+        });
 
         clearLogButton.setOnAction(e -> {
             logView.getItems().clear();
@@ -224,27 +228,28 @@ public class MainController {
         });
 
         startButton.setOnAction(e -> Platform.runLater(() -> {
-            startButton.setDisable(true);
-            downloadButton.setDisable(true);
+            fileList.getItems().clear();
             if (isNull(currentFileInfo)) {
                 if (StringUtils.isBlank(currentPath)) {
                     ExceptionBox.displayWarn("Ошибка", "Ошибка запуска операции. Файл или папка не выбраны");
                     _log.error("Ошибка запуска операции. Файл или папка не выбраны");
                 } else {
                     _log.info("Поиск файлов на чтение по пути <%s>", currentPath);
-                    this.processedFiles = medicalHandler.readFile(currentPath);
-                    if (CollectionUtils.isEmpty(processedFiles.getProcessedFiles())) {
-                        _log.error("Не найдены файлы удовлетворяющие фильтры <%s>", currentPath);
-                    } else {
-                        setFiles(processedFiles);
-                        this.downloadDto = null;
-                        downloadButton.setDisable(false);
-                        _log.info("Чтение успешно по пути <%s>", currentPath);
+                    BiConsumer<ProgressBar, Label> startProcess = this::startProcessReadFiles;
+                    Runnable processSuccess = this::processReadFilesSuccess;
+                    Runnable processFailed = this::processReadFilesFailed;
+
+                    try {
+                        downloadComponent.startReadFiles(startProcess, processSuccess, processFailed);
+                    } catch (Exception exception) {
+                        log.error("Failed to process files: {}", currentPath, exception);
                     }
-                    showErrorsButton.setVisible(true);
                 }
             } else {
+                startButton.setDisable(true);
+                downloadButton.setDisable(true);
                 _log.info("Поиск на чтение файла <%s> ", currentFileInfo.getFilename());
+
                 this.processedFiles = medicalHandler.readFile(currentFileInfo);
                 if (CollectionUtils.isEmpty(processedFiles.getProcessedFiles())) {
                     _log.error("Файл не удовлетворяет фильтрации <%s>. Контент не поддерживается.", currentFileInfo.getAbsolutePath());
@@ -255,8 +260,8 @@ public class MainController {
                     _log.info("Чтение успешно для файла <%s>", currentFileInfo.getFilename());
                 }
                 showErrorsButton.setVisible(true);
+                startButton.setDisable(false);
             }
-            startButton.setDisable(false);
         }));
 
         FileChooser chooserForSave = new FileChooser();
@@ -299,20 +304,52 @@ public class MainController {
                     }
                 }
             } else {
-                _log.error("Д");
+                _log.error("Не удалось получить файлы для скачивания");
                 downloadButton.setDisable(true);
             }
         }));
     }
 
+    private void startProcessReadFiles(ProgressBar progressBar, Label label) {
+        openButton.setDisable(true);
+        openMultipleButton.setDisable(true);
+        startButton.setDisable(true);
+        downloadButton.setDisable(true);
+        processedFiles = medicalHandler.readFiles(currentPath, progressBar, label);
+    }
+
+    private void processReadFilesSuccess() {
+        log.info("Success processed files: {}", currentPath);
+        if (processedFiles == null || CollectionUtils.isEmpty(processedFiles.getProcessedFiles())) {
+            _log.error("Не найдены файлы удовлетворяющие фильтры <%s>", currentPath);
+        } else {
+            setFiles(processedFiles);
+            downloadDto = null;
+            downloadButton.setDisable(false);
+            _log.info("Чтение успешно по пути <%s>", currentPath);
+        }
+        disabledProcessReadFiles();
+    }
+
+    private void processReadFilesFailed() {
+        log.info("Failed processed files: {}", currentPath);
+        disabledProcessReadFiles();
+    }
+
+    private void disabledProcessReadFiles() {
+        openButton.setDisable(false);
+        openMultipleButton.setDisable(false);
+        startButton.setDisable(false);
+        showErrorsButton.setVisible(true);
+    }
+
     private void setFiles(ProcessResponse<MedicalDocFile> res) {
-        this.fileList.getItems().clear();
         List<MedicalDocFile> result = Stream.concat(res.getProcessedFiles().stream(), res.getErrorFiles().stream())
                 .sorted(Comparator.comparing(MedicalDocFile::getFilename))
                 .toList();
-        this.fileList.getItems().addAll(result);
+        fileList.getItems().addAll(result);
         countNameLabel.setVisible(true);
-        countLabel.setText(String.valueOf(this.fileList.getItems().size()));
+        countLabel.setText(String.valueOf(fileList.getItems().size()));
     }
 
     private void logDelim() {
@@ -321,7 +358,19 @@ public class MainController {
         }
     }
 
-    private static void setLogView(ListView<String> logView) {
+    private void setThemeClearButton() {
+        Image icon = new Image(this.getClass().getResourceAsStream("/image/delete-icon.png"));
+        ImageView iconView = new ImageView(icon);
+        iconView.setFitWidth(32);
+        iconView.setFitHeight(32);
+        clearLogButton.setGraphic(iconView);
+        clearLogButton.setStyle("""
+                -fx-background-color: transparent;
+                -fx-cursor: hand;
+                """);
+    }
+
+    private static void setThemeLogView(ListView<String> logView) {
         logView.getStylesheets().clear();
         if (CURRENT_THEME == LIGHT) {
             String styleSheet = "/ru/work/service/view/css/log-list-light.css";

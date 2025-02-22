@@ -13,12 +13,12 @@ import net.rgielen.fxweaver.core.FxWeaver;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
 import ru.work.service.MedicalCardServiceApplication;
-import ru.work.service.view.controller.AuthController;
+import ru.work.service.view.controller.MainController;
 import ru.work.service.view.util.Constants;
+import ru.work.service.view.util.StageUtil;
 import ru.work.service.view.util.Theme;
 
 import static ru.work.service.view.util.Constants.CURRENT_THEME;
-import static ru.work.service.view.util.StageUtil.setWidthAndHeight;
 
 public class JavaFxApplication extends Application {
 
@@ -37,11 +37,11 @@ public class JavaFxApplication extends Application {
     @Override
     public void start(Stage window) {
         FxWeaver fxWeaver = APPLICATION_CONTEXT.getBean(FxWeaver.class);
-        Parent root = fxWeaver.loadView(AuthController.class);
+        Parent root = fxWeaver.loadView(MainController.class);
         Scene scene = new Scene(root);
-        window.initStyle(StageStyle.DECORATED);
+        window.initStyle(StageStyle.UTILITY);
         window.setScene(scene);
-        setWidthAndHeight(window, 500, 200);
+        StageUtil.setWidthAndHeight(window, 950, 590);
         window.getIcons().add(new Image(Constants.MAIN_ICO));
         WINDOW = window;
         window.show();

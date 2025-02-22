@@ -1,7 +1,8 @@
 package ru.work.service.service.sheet.template;
 
+import javafx.scene.control.Label;
+import javafx.scene.control.ProgressBar;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.poi.hssf.usermodel.HSSFClientAnchor;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.ClientAnchor;
@@ -23,7 +24,7 @@ import static ru.work.service.service.sheet.SheetStyle.IF_CELL_IS_NULL;
 
 public interface SheetTemplate<T extends FileDto> {
 
-    ProcessResponse<T> read(List<FileDto> files);
+    ProcessResponse<T> read(List<FileDto> files, ProgressBar progressBar, Label loadingText);
 
     DownloadDto prepare(String downloadFilename, ByteArrayOutputStream xlsxContent);
 

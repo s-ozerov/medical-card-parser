@@ -1,5 +1,8 @@
 package ru.work.service.service.sheet.template;
 
+import javafx.application.Platform;
+import javafx.scene.control.Label;
+import javafx.scene.control.ProgressBar;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.Cell;
@@ -23,13 +26,15 @@ import ru.work.service.service.sheet.SheetStyle;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import static ru.work.service.helper.FileHelper.calculateSize;
@@ -49,17 +54,28 @@ public class MedicalTemplate implements SheetTemplate<MedicalDocFile> {
     private final Map<Sheet, XSSFDrawing> drawingMap = new HashMap<>();
 
     @Override
-    public ProcessResponse<MedicalDocFile> read(List<FileDto> files) {
+    public ProcessResponse<MedicalDocFile> read(List<FileDto> files, ProgressBar progressBar, Label loadingText) {
         if (CollectionUtils.isEmpty(files)) {
             return new ProcessResponse<>();
         }
 
-        AtomicReference<Integer> countSmall = new AtomicReference<>(0);
+        AtomicInteger completed = new AtomicInteger(1);
+        AtomicInteger countSmall = new AtomicInteger(0);
         List<MedicalDocFile> docFiles = files.stream()
                 .map(file -> {
                     MedicalDocFile doc = parserHelper.readDoc(file);
                     if (doc != null && doc.getSizeKb().compareTo(SMALL_FILE_SIZE) < 0) {
                         countSmall.set(countSmall.get() + 1);
+                    }
+                    if (progressBar != null) {
+                        var progress = (double) completed.getAndIncrement() / files.size();
+
+                        Platform.runLater(() -> {
+                            progressBar.setProgress(progress);
+                            var percent = BigDecimal.valueOf((double) completed.get() / files.size() * 100)
+                                                  .setScale(2, RoundingMode.DOWN) + "%";
+                            loadingText.setText(percent + " (%d / %d)".formatted(completed.get(), files.size()));
+                        });
                     }
                     return doc;
                 })

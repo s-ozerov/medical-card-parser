@@ -11,9 +11,7 @@ logging:
     org.apache.poi.hwpf.model.PAPBinTable: OFF
     org.apache.poi.hwpf.sprm.SectionSprmUncompressor: OFF
 
-
 medical-template:
-  key: 45c48807-b912-453c-b428-9499dadd91f6
   column-enabled:             #true - включить, false - выключить
     filename: true            #Добавляет столбец с названием файла
   columns:                    #Столбцы в итоговом файле расположены в алфавитном порядке.
