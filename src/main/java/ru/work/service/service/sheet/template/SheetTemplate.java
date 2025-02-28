@@ -1,7 +1,5 @@
 package ru.work.service.service.sheet.template;
 
-import javafx.scene.control.Label;
-import javafx.scene.control.ProgressBar;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
@@ -12,25 +10,18 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.usermodel.XSSFDrawing;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import ru.work.service.dto.DownloadDto;
 import ru.work.service.dto.FileDto;
-import ru.work.service.dto.ProcessResponse;
+import ru.work.service.dto.SheetSettings;
 
-import java.io.ByteArrayOutputStream;
 import java.time.LocalDate;
-import java.util.List;
 
 import static ru.work.service.service.sheet.SheetStyle.IF_CELL_IS_NULL;
 
-public interface SheetTemplate<T extends FileDto> {
+public interface SheetTemplate<T extends FileDto, S extends SheetSettings> {
 
-    ProcessResponse<T> read(List<FileDto> files, ProgressBar progressBar, Label loadingText);
+    void buildRowHeaders(XSSFWorkbook workbook, Sheet sheet, S settings);
 
-    DownloadDto prepare(String downloadFilename, ByteArrayOutputStream xlsxContent);
-
-    void buildRowHeaders(XSSFWorkbook workbook, Sheet sheet);
-
-    void buildRowData(XSSFWorkbook workbook, Sheet sheet, T doc);
+    String buildRowData(XSSFWorkbook workbook, Sheet sheet, T doc, S settings);
 
     default Row buildRow(Sheet sheet) {
         return sheet.createRow(sheet.getLastRowNum() + 1);
@@ -55,6 +46,10 @@ public interface SheetTemplate<T extends FileDto> {
         comm.setAuthor("system");
         cell.setCellComment(comm);
         return cell;
+    }
+
+    default <O> void addEnabledCell(boolean enabled, Row row, O value, CellStyle style) {
+        if (enabled) addCell(row, value, style);
     }
 
     default <O> Cell addCell(Row row, O value, CellStyle style) {

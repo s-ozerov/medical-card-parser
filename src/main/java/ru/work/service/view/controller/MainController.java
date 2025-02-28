@@ -27,10 +27,9 @@ import ru.work.service.dto.FileDto;
 import ru.work.service.dto.ProcessResponse;
 import ru.work.service.dto.enums.Extension;
 import ru.work.service.dto.enums.ProcessedStatus;
-import ru.work.service.dto.medical.AntibioticGram;
 import ru.work.service.dto.medical.MedicalDocFile;
 import ru.work.service.helper.FileHelper;
-import ru.work.service.service.sheet.MedicalSheetFileHandler;
+import ru.work.service.service.sheet.MedicalFileHandler;
 import ru.work.service.view.JavaFxApplication;
 import ru.work.service.view.component.DownloadComponent;
 import ru.work.service.view.component.ExceptionBox;
@@ -46,7 +45,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.Objects.isNull;
@@ -88,7 +86,7 @@ public class MainController {
     @FXML
     private ChoiceBox<String> themeBox;
 
-    private final MedicalSheetFileHandler medicalHandler;
+    private final MedicalFileHandler medicalHandler;
     private final DownloadComponent downloadComponent;
 
     private LogFactory _log;
@@ -101,6 +99,8 @@ public class MainController {
     @FXML
     public void initialize() {
         setThemeClearButton();
+        setThemeOpenButton();
+        setThemeMultipleOpenButton();
         countNameLabel.setVisible(false);
 
         _log = new LogFactory(this.getClass(), logView);
@@ -110,6 +110,10 @@ public class MainController {
         ObservableList<String> themes = FXCollections.observableArrayList(DARK.name(), LIGHT.name());
 
         setThemeLogView(logView);
+        setThemeSuperButton(startButton);
+        setThemeIconButton(openButton);
+        setThemeIconButton(openMultipleButton);
+        setThemeDownloadButton();
 
         themeBox.setValue(CURRENT_THEME.name());
         themeBox.setItems(themes);
@@ -121,8 +125,12 @@ public class MainController {
                 JavaFxApplication.setTheme(new PrimerLight());
                 CURRENT_THEME = LIGHT;
             }
+            setThemeSuperButton(startButton);
+            setThemeIconButton(openButton);
+            setThemeIconButton(openMultipleButton);
             setThemeLogView(logView);
         });
+        themeBox.getStylesheets().add("/ru/work/service/view/css/choice-box.css");
     }
 
     private void initListView() {
@@ -137,6 +145,11 @@ public class MainController {
     }
 
     private void initButtons() {
+        startButton.getStyleClass().add("super-button"); // Применяем стиль
+        openButton.getStyleClass().add("icon-button"); // Применяем стиль
+        openMultipleButton.getStyleClass().add("icon-button"); // Применяем стиль
+        downloadButton.getStyleClass().add("download-button"); // Применяем стиль
+
         showErrorsButton.setVisible(false);
         showErrorsButton.setOnAction(e -> {
             if (processedFiles == null) {
@@ -195,6 +208,7 @@ public class MainController {
                         showErrorsButton.setVisible(false);
 
                         startButton.setDisable(false);
+                        startButton.setText("Получить из файла");
                         this.currentFileInfo = currentFileInfo;
                     }
                 }
@@ -218,6 +232,7 @@ public class MainController {
                 _log.info("Найдена папка: %s", selectedDirectory.getAbsolutePath());
                 this.currentPath = selectedDirectory.getPath();
                 startButton.setDisable(false);
+                startButton.setText("Получить из папки");
                 downloadButton.setDisable(true);
             }
         });
@@ -251,7 +266,7 @@ public class MainController {
                 _log.info("Поиск на чтение файла <%s> ", currentFileInfo.getFilename());
 
                 this.processedFiles = medicalHandler.readFile(currentFileInfo);
-                if (CollectionUtils.isEmpty(processedFiles.getProcessedFiles())) {
+                if (CollectionUtils.isEmpty(processedFiles.getSuccessFiles())) {
                     _log.error("Файл не удовлетворяет фильтрации <%s>. Контент не поддерживается.", currentFileInfo.getAbsolutePath());
                 } else {
                     setFiles(processedFiles);
@@ -268,7 +283,7 @@ public class MainController {
         chooserForSave.setTitle("Сохранение результата");
         downloadButton.setDisable(true);
         downloadButton.setOnAction(e -> Platform.runLater(() -> {
-            if (processedFiles != null && !CollectionUtils.isEmpty(processedFiles.getProcessedFiles())) {
+            if (processedFiles != null && !CollectionUtils.isEmpty(processedFiles.getSuccessFiles())) {
                 DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH-mm-ss-SSS");
                 String downloadFilename = "результат " + formatter.format(LocalDateTime.now()) + Extension.XLSX.format();
                 chooserForSave.setInitialFileName(downloadFilename);
@@ -292,9 +307,9 @@ public class MainController {
                             FileUtils.copyInputStreamToFile(downloadDto.getContent(), saveFile);
                             _log.info("Файл успешно преобразован и сохранён <%s>", saveFile.getName());
                             if (!CollectionUtils.isEmpty(downloadDto.getNotFound())) {
-                                for (Map.Entry<String, List<AntibioticGram.AntibioticoGramItem>> entry : downloadDto.getNotFound().entrySet()) {
-                                    if (!CollectionUtils.isEmpty(entry.getValue())) {
-                                        _log.error("Не удалось найти колонки для <%s>: %s", entry.getKey(), StringUtils.join(entry.getValue().stream().map(s -> s.name).collect(Collectors.toSet()), ","));
+                                for (Map.Entry<String, String> entry : downloadDto.getNotFound().entrySet()) {
+                                    if (!StringUtils.isNotBlank(entry.getValue())) {
+                                        _log.error("Не найдены колонки <%s>: %s", entry.getKey(), entry.getValue());
                                     }
                                 }
                             }
@@ -320,7 +335,7 @@ public class MainController {
 
     private void processReadFilesSuccess() {
         log.info("Success processed files: {}", currentPath);
-        if (processedFiles == null || CollectionUtils.isEmpty(processedFiles.getProcessedFiles())) {
+        if (processedFiles == null || CollectionUtils.isEmpty(processedFiles.getSuccessFiles())) {
             _log.error("Не найдены файлы удовлетворяющие фильтры <%s>", currentPath);
         } else {
             setFiles(processedFiles);
@@ -344,7 +359,7 @@ public class MainController {
     }
 
     private void setFiles(ProcessResponse<MedicalDocFile> res) {
-        List<MedicalDocFile> result = Stream.concat(res.getProcessedFiles().stream(), res.getErrorFiles().stream())
+        List<MedicalDocFile> result = Stream.concat(res.getSuccessFiles().stream(), res.getErrorFiles().stream())
                 .sorted(Comparator.comparing(MedicalDocFile::getFilename))
                 .toList();
         fileList.getItems().addAll(result);
@@ -358,11 +373,38 @@ public class MainController {
         }
     }
 
+    private void setThemeDownloadButton() {
+        Image icon = new Image(this.getClass().getResourceAsStream("/image/download-32.png"));
+        ImageView iconView = new ImageView(icon);
+        iconView.setFitWidth(36);
+        iconView.setFitHeight(36);
+        downloadButton.setGraphic(iconView);
+
+        String styleSheet = "/ru/work/service/view/css/button-download.css";
+        downloadButton.getStylesheets().add(styleSheet);
+    }
+
+    private void setThemeOpenButton() {
+        Image icon = new Image(this.getClass().getResourceAsStream("/image/word.png"));
+        ImageView iconView = new ImageView(icon);
+        iconView.setFitWidth(36);
+        iconView.setFitHeight(36);
+        openButton.setGraphic(iconView);
+    }
+
+    private void setThemeMultipleOpenButton() {
+        Image icon = new Image(this.getClass().getResourceAsStream("/image/folder-48.png"));
+        ImageView iconView = new ImageView(icon);
+        iconView.setFitWidth(36);
+        iconView.setFitHeight(36);
+        openMultipleButton.setGraphic(iconView);
+    }
+
     private void setThemeClearButton() {
         Image icon = new Image(this.getClass().getResourceAsStream("/image/delete-icon.png"));
         ImageView iconView = new ImageView(icon);
-        iconView.setFitWidth(32);
-        iconView.setFitHeight(32);
+        iconView.setFitWidth(48);
+        iconView.setFitHeight(48);
         clearLogButton.setGraphic(iconView);
         clearLogButton.setStyle("""
                 -fx-background-color: transparent;
@@ -378,6 +420,28 @@ public class MainController {
         } else {
             String styleSheet = "/ru/work/service/view/css/log-list-dark.css";
             logView.getStylesheets().add(styleSheet);
+        }
+    }
+
+    private static void setThemeSuperButton(Button button) {
+        button.getStylesheets().clear();
+        if (CURRENT_THEME == LIGHT) {
+            String styleSheet = "/ru/work/service/view/css/button-super-light.css";
+            button.getStylesheets().add(styleSheet);
+        } else {
+            String styleSheet = "/ru/work/service/view/css/button-super-dark.css";
+            button.getStylesheets().add(styleSheet);
+        }
+    }
+
+    private static void setThemeIconButton(Button button) {
+        button.getStylesheets().clear();
+        if (CURRENT_THEME == LIGHT) {
+            String styleSheet = "/ru/work/service/view/css/button-icon-light.css";
+            button.getStylesheets().add(styleSheet);
+        } else {
+            String styleSheet = "/ru/work/service/view/css/button-icon-dark.css";
+            button.getStylesheets().add(styleSheet);
         }
     }
 

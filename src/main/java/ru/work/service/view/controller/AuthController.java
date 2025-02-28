@@ -15,7 +15,6 @@ import net.rgielen.fxweaver.core.FxWeaver;
 import net.rgielen.fxweaver.core.FxmlView;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
-import ru.work.service.config.MedicalTemplateProperties;
 import ru.work.service.rest.CurrentTimeRestAdapter;
 import ru.work.service.view.JavaFxApplication;
 import ru.work.service.view.component.ExceptionBox;
@@ -47,7 +46,6 @@ public class AuthController {
     @FXML
     private Button exitButton;
 
-    private final MedicalTemplateProperties properties;
     private final CurrentTimeRestAdapter currentTimeRestAdapter;
     private Boolean isAuth = null;
 
@@ -85,8 +83,9 @@ public class AuthController {
             ExceptionBox.displayWarn("Информация", "Пробный период окончен!");
             return;
         } else {
-            if (StringUtils.isNotBlank(properties.getKey())) {
-                if (Arrays.equals(properties.getKey().getBytes(StandardCharsets.UTF_8), KEY_ENCRYPT)) {
+            var key = "";
+            if (StringUtils.isNotBlank(key)) {
+                if (Arrays.equals(key.getBytes(StandardCharsets.UTF_8), KEY_ENCRYPT)) {
                     authTextField.setVisible(false);
                     isAuth = true;
                 } else {

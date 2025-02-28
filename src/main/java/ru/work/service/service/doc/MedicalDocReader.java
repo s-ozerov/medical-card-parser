@@ -7,7 +7,6 @@ import org.apache.poi.hwpf.HWPFDocument;
 import org.apache.poi.hwpf.extractor.WordExtractor;
 import org.springframework.stereotype.Component;
 import ru.work.service.anotations.SheetColumn;
-import ru.work.service.dto.ConvertDocToXlsx;
 import ru.work.service.dto.FileDto;
 import ru.work.service.dto.enums.ProcessedStatus;
 import ru.work.service.dto.medical.MedicalDocFile;
@@ -37,7 +36,7 @@ import static ru.work.service.view.util.Constants.SMALL_FILE_SIZE;
 
 @Slf4j
 @Component
-public class MedicalParserHelper implements ConvertDocToXlsx<MedicalDocFile> {
+public class MedicalDocReader implements DocReader<MedicalDocFile> {
 
     private static final String I = "I";
     private static final String R = "R";
@@ -60,9 +59,9 @@ public class MedicalParserHelper implements ConvertDocToXlsx<MedicalDocFile> {
             "не имеет диагностического", "*Определение чувствительности", "Дата выдачи"};
 
     @Override
-    public MedicalDocFile readDoc(FileDto file) {
+    public MedicalDocFile read(FileDto docFile) {
         try (
-                InputStream inputStream = new FileInputStream(file.getAbsolutePath());
+                InputStream inputStream = new FileInputStream(docFile.getAbsolutePath());
                 HWPFDocument doc = new HWPFDocument(inputStream);
                 WordExtractor we = new WordExtractor(doc)) {
             String template = clearParagraphsToText(we.getText()).toString();
@@ -70,7 +69,7 @@ public class MedicalParserHelper implements ConvertDocToXlsx<MedicalDocFile> {
 
             Map<Integer, List<String>> parts = getParts(templateRows);
 
-            MedicalDocFile info = new MedicalDocFile(file);
+            MedicalDocFile info = new MedicalDocFile(docFile);
             if (parts.isEmpty()) {
                 info.setFailed(ProcessedStatus.FILE_NO_TEMPLATE, null);
                 return info;
@@ -137,13 +136,13 @@ public class MedicalParserHelper implements ConvertDocToXlsx<MedicalDocFile> {
 
             if (info.getMicroorganisms().isEmpty()) {
                 String errorMessage = "Файл <%s> не подходит. Таблица с микроорганизмами не заполнена. Размер файла %s КБ"
-                        .formatted(info.getFilename(), file.getSizeKb());
+                        .formatted(info.getFilename(), docFile.getSizeKb());
                 info.setFailed(ProcessedStatus.MEDICAL_FILE_IS_EMPTY, errorMessage);
                 return info;
             }
             if (info.getMicroorganisms().get(0).name.equalsIgnoreCase("Pоста микрофлоры не обнаружено")) {
                 String errorMessage = "Файл <%s> не подходит. Pоста микрофлоры не обнаружено. Размер файла %s КБ"
-                        .formatted(info.getFilename(), file.getSizeKb());
+                        .formatted(info.getFilename(), docFile.getSizeKb());
                 info.setFailed(ProcessedStatus.MEDICAL_FILE_IS_EMPTY, errorMessage);
                 return info;
             }
@@ -157,7 +156,7 @@ public class MedicalParserHelper implements ConvertDocToXlsx<MedicalDocFile> {
                 }
 
                 info.setFailed(ProcessedStatus.ANTI_V1_IS_EMPTY, "Файл <%s> не подходит. Антибиотикограмма пуста. Размер файла %s КБ"
-                        .formatted(info.getFilename(), file.getSizeKb()));
+                        .formatted(info.getFilename(), docFile.getSizeKb()));
                 return info;
             }
 
@@ -270,7 +269,7 @@ public class MedicalParserHelper implements ConvertDocToXlsx<MedicalDocFile> {
 
             if (CollectionUtils.isEmpty(info.getAntibioticGrams())) {
                 info.setFailed(ProcessedStatus.ANTI_V1_IS_EMPTY, "Файл <%s> не подходит. Антибиотикограмма пуста. Размер файла %s КБ"
-                        .formatted(info.getFilename(), file.getSizeKb()));
+                        .formatted(info.getFilename(), docFile.getSizeKb()));
                 return info;
             }
 
@@ -281,8 +280,8 @@ public class MedicalParserHelper implements ConvertDocToXlsx<MedicalDocFile> {
             if (e instanceof IllegalArgumentException) {
                 status = ProcessedStatus.WRONG_CODING;
             }
-            MedicalDocFile info = new MedicalDocFile(file);
-            String errorMessage = "Не удалось обработать файл <%s>: %s".formatted(file.getFilename(), e.getMessage());
+            MedicalDocFile info = new MedicalDocFile(docFile);
+            String errorMessage = "Не удалось обработать файл <%s>: %s".formatted(docFile.getFilename(), e.getMessage());
             info.setFailed(status, errorMessage);
             return info;
         }

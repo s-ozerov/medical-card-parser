@@ -1,16 +1,17 @@
-package ru.work.service.dto;
+package ru.work.service.service.doc;
 
 import org.apache.commons.lang3.StringUtils;
+import ru.work.service.dto.FileDto;
 
 import java.util.Arrays;
 
-public interface ConvertDocToXlsx<T> {
+public interface DocReader<T> {
 
     String SEPARATOR_TR = "\t\r";
     String SEPARATOR_T = "\t";
     String SEPARATOR_RN = "\r\n";
 
-    T readDoc(FileDto dto);
+    T read(FileDto dto);
 
     default StringBuilder clearParagraphsToText(String text) {
         StringBuilder builder = new StringBuilder(text);

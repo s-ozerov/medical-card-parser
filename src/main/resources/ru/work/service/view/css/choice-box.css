@@ -1,0 +1,9 @@
+.choice-box {
+    -fx-font-size: 11px;
+    -fx-font-family: "Bookman Old Style"
+}
+
+.choice-box .menu-item {
+    -fx-font-size: 11px;
+    -fx-font-family: "Bookman Old Style"
+}

@@ -11,6 +11,7 @@ import ru.work.service.dto.enums.ProcessedStatus;
 import java.time.LocalDate;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 
 @Getter
 @Setter
@@ -58,7 +59,12 @@ public class MedicalDocFile extends FileDto {
         if (CollectionUtils.isEmpty(this.getAntibioticGrams().get(0).items)) {
             return 0;
         }
-        return this.getAntibioticGrams().get(0).items.get(0).size;
+
+        Optional<Integer> max = antibioticGrams.stream()
+                .flatMap(a -> a.items.stream())
+                .map(i -> i.size)
+                .max(Integer::compareTo);
+        return max.orElse(0);
     }
 
     public void addAntibioticGram(String header) {

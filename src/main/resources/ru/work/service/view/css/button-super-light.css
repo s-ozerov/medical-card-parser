@@ -1,0 +1,25 @@
+/* Стили для кнопки  */
+.super-button {
+    -fx-background-color: #2196F3; /* Синий фон */
+    -fx-text-fill: white; /* Белый текст */
+    -fx-font-size: 14px;
+    -fx-font-family: "Arial";
+    -fx-border-width: 0; /* Убираем рамку */
+    -fx-border-radius: 15px; /* Закругление углов границы */
+    -fx-background-radius: 5px; /* Закругление углов фона */
+    -fx-padding: 10px 20px; /* Отступы */
+    -fx-cursor: hand; /* Курсор в виде руки */
+    -fx-effect: dropshadow(three-pass-box, rgba(0, 0, 0, 0.2), 5, 0, 0, 0); /* Тень */
+}
+
+/* Эффект при наведении на кнопку */
+.super-button:hover {
+    -fx-background-color: #1976D2; /* Темно-синий фон при наведении */
+    -fx-effect: dropshadow(three-pass-box, rgba(0, 0, 0, 0.4), 10, 0, 0, 0); /* Увеличенная тень */
+}
+
+/* Эффект при нажатии на кнопку */
+.super-button:pressed {
+    -fx-background-color: #0D47A1; /* Еще темнее при нажатии */
+    -fx-effect: dropshadow(three-pass-box, rgba(0, 0, 0, 0.6), 15, 0, 0, 0); /* Еще больше тени */
+}

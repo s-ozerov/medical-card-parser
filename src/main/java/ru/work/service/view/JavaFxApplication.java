@@ -39,7 +39,7 @@ public class JavaFxApplication extends Application {
         FxWeaver fxWeaver = APPLICATION_CONTEXT.getBean(FxWeaver.class);
         Parent root = fxWeaver.loadView(MainController.class);
         Scene scene = new Scene(root);
-        window.initStyle(StageStyle.UTILITY);
+        window.initStyle(StageStyle.DECORATED);
         window.setScene(scene);
         StageUtil.setWidthAndHeight(window, 950, 590);
         window.getIcons().add(new Image(Constants.MAIN_ICO));

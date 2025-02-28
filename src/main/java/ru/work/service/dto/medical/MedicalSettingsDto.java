@@ -2,6 +2,7 @@ package ru.work.service.dto.medical;
 
 import lombok.Builder;
 import lombok.Data;
+import ru.work.service.dto.SheetSettings;
 import ru.work.service.view.util.Theme;
 
 import java.util.LinkedList;
@@ -10,7 +11,7 @@ import java.util.TreeMap;
 
 @Data
 @Builder
-public class MedicalSettingsDto {
+public class MedicalSettingsDto implements SheetSettings {
 
     private String lastPatch;
     private Theme currentTheme;
@@ -21,14 +22,17 @@ public class MedicalSettingsDto {
     @Data
     @Builder
     public static class ColumnEnabledSettings {
-        private boolean filename;
-        private boolean receiveMaterialDate;
-        private boolean patient;
+        private boolean month;
+        private boolean microorganisms;
+        private boolean division;
         private boolean bioMaterial;
+        private boolean receiveMaterialDate;
+        private boolean filename;
+        private boolean patient;
         private boolean diagnose;
         private boolean ib;
         private boolean numberAnalyze;
-        private boolean division;
+
     }
 
 

@@ -1,0 +1,25 @@
+.download-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: white; /* Белый текст */
+    -fx-font-size: 12px;
+    -fx-font-family: "Arial";
+    -fx-border-width: 0; /* Убираем рамку */
+    -fx-border-radius: 5px; /* Закругление углов границы */
+    -fx-background-radius: 5px; /* Закругление углов фона */
+    -fx-padding: 1px 1px; /* Отступы */
+    -fx-cursor: hand; /* Курсор в виде руки */
+    -fx-effect: dropshadow(three-pass-box, rgba(0, 0, 0, 0.2), 5, 0, 0, 0); /* Тень */
+
+}
+
+/* Эффект при наведении на кнопку */
+.download-button:hover {
+    -fx-background-color: #c8ffbf;
+    -fx-effect: dropshadow(three-pass-box, rgba(0, 0, 0, 0.4), 10, 0, 0, 0); /* Увеличенная тень */
+}
+
+/* Эффект при нажатии на кнопку */
+.download-button:pressed {
+    -fx-background-color: #acfaa8;
+    -fx-effect: dropshadow(three-pass-box, rgba(0, 0, 0, 0.6), 15, 0, 0, 0); /* Еще больше тени */
+}

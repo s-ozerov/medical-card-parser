@@ -20,10 +20,10 @@ import java.time.format.DateTimeFormatter;
 @Slf4j
 @Disabled
 @SpringBootTest
-class MedicalSheetFileHandlerTest {
+class MedicalFileHandlerTest {
 
     @Autowired
-    private MedicalSheetFileHandler medicalSheetFileHandler;
+    private MedicalFileHandler medicalSheetFileHandler;
 
     @Autowired
     private CurrentTimeRestAdapter currentTimeRestAdapter;

@@ -140,8 +140,8 @@ public class FileBox {
 
     public static void displayFilesInfo(ProcessResponse<MedicalDocFile> groupFiles) {
         Platform.runLater(() -> {
-            List<MedicalDocFile> completed = CollectionUtils.isEmpty(groupFiles.getProcessedFiles()) ?
-                    new ArrayList<>() : groupFiles.getProcessedFiles();
+            List<MedicalDocFile> completed = CollectionUtils.isEmpty(groupFiles.getSuccessFiles()) ?
+                    new ArrayList<>() : groupFiles.getSuccessFiles();
             List<MedicalDocFile> errors = CollectionUtils.isEmpty(groupFiles.getErrorFiles()) ?
                     new ArrayList<>() : groupFiles.getErrorFiles();
 

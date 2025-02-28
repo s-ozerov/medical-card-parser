@@ -1,56 +1,62 @@
-package ru.work.service.service;
+package ru.work.service.service.manager;
 
-import com.google.gson.Gson;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
 import ru.work.service.dto.medical.MedicalSettingsDto;
+import ru.work.service.exception.FailedSaveSettingsException;
 import ru.work.service.view.util.Theme;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
 @Slf4j
-@Service
-@RequiredArgsConstructor
-public class MedicalSettingsService {
+public class MedicalSettingsManager {
 
     private static final String FILE_NAME_SETTINGS = "settings";
     private static final String PATH_SETTINGS = System.getProperty("user.dir") + "\\" + FILE_NAME_SETTINGS;
 
-    private final Gson gson;
+    public static MedicalSettingsDto saveSettings(MedicalSettingsDto settings) {
+        return write(settings);
+    }
 
-    private MedicalSettingsDto write(MedicalSettingsDto settingsDto) {
-        try (FileWriter writer = new FileWriter(PATH_SETTINGS, true);
-             BufferedWriter bufferedWriter = new BufferedWriter(writer);
-        ) {
-            String content = gson.toJson(settingsDto);
-            bufferedWriter.write(content);
-            return settingsDto;
-        } catch (Exception e) {
+    public static MedicalSettingsDto readSettings() {
+        MedicalSettingsDto settings = read();
+        if (settings == null) {
+            return defaultSettings();
+        }
+        return settings;
+    }
+
+    private static MedicalSettingsDto write(MedicalSettingsDto settings) {
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(PATH_SETTINGS))) {
+            oos.writeObject(settings);
+            log.info("Success save settings");
+            return settings;
+        } catch (IOException e) {
             log.error("Failed write in file: {}", e.getMessage());
-            return null;
+            throw new FailedSaveSettingsException("Не удалось сохранить настройки по пути: %s".formatted(PATH_SETTINGS));
         }
     }
 
-    private MedicalSettingsDto read() {
-        try {
-            String content = new String(Files.readAllBytes(Paths.get(PATH_SETTINGS)));
-            return gson.fromJson(content, MedicalSettingsDto.class);
-        } catch (Exception e) {
+    private static MedicalSettingsDto read() {
+        MedicalSettingsDto settings = null;
+        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(PATH_SETTINGS))) {
+            settings = (MedicalSettingsDto) ois.readObject();
+            log.info("Success read settings");
+        } catch (IOException | ClassNotFoundException e) {
             log.error("Failed read from file: {}", e.getMessage());
-            return null;
         }
+        return settings;
     }
 
 
-    private MedicalSettingsDto defaultSettings() {
+    private static MedicalSettingsDto defaultSettings() {
         Map<String, LinkedList<String>> columns = new TreeMap<>();
         columns.put("AMP", new LinkedList<>(List.of("Ампициллин")));
         columns.put("AZIT", new LinkedList<>(List.of("Азитромицинк")));
@@ -103,10 +109,11 @@ public class MedicalSettingsService {
                 .lastPatch("user.home")
                 .currentTheme(Theme.DARK)
                 .columnEnabled(MedicalSettingsDto.ColumnEnabledSettings.builder()
+                        .month(true)
                         .ib(false)
-                        .bioMaterial(false)
+                        .bioMaterial(true)
                         .diagnose(false)
-                        .division(false)
+                        .division(true)
                         .patient(false)
                         .numberAnalyze(false)
                         .receiveMaterialDate(false)

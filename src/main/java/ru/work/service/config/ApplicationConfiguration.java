@@ -4,7 +4,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.cloud.openfeign.FeignAutoConfiguration;
 import org.springframework.context.annotation.Bean;
@@ -17,7 +16,6 @@ import ru.work.service.rest.CurrentTimeRest;
 @EnableFeignClients(basePackageClasses = CurrentTimeRest.class)
 @EnableScheduling
 @RequiredArgsConstructor
-@EnableConfigurationProperties({MedicalTemplateProperties.class})
 public class ApplicationConfiguration {
 
     @Bean
