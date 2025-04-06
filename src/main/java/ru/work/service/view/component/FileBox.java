@@ -4,8 +4,11 @@ import javafx.application.Platform;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.ListView;
 import javafx.scene.control.TextArea;
 import javafx.scene.image.Image;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
@@ -18,9 +21,11 @@ import ru.work.service.dto.medical.AntibioticGram;
 import ru.work.service.dto.medical.MedicalDocFile;
 import ru.work.service.dto.medical.Microorganism;
 import ru.work.service.view.util.Constants;
+import ru.work.service.view.util.ImageFactory;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -35,9 +40,13 @@ import static ru.work.service.dto.enums.ProcessedStatus.FAILED_READ;
 import static ru.work.service.dto.enums.ProcessedStatus.FILE_NO_TEMPLATE;
 import static ru.work.service.dto.enums.ProcessedStatus.MEDICAL_FILE_IS_EMPTY;
 import static ru.work.service.dto.enums.ProcessedStatus.WRONG_CODING;
+import static ru.work.service.view.util.Constants.PATCH_CSS;
+import static ru.work.service.view.util.ImageFactory.buildSize20;
 import static ru.work.service.view.util.StageUtil.setWidthAndHeight;
 
 public class FileBox {
+
+    private static final Map<VBox, Boolean> expandedMap = new HashMap<>();
 
     public static void displayFileInfo(MedicalDocFile file) {
         Platform.runLater(() -> {
@@ -138,70 +147,48 @@ public class FileBox {
         return value;
     }
 
-    public static void displayFilesInfo(ProcessResponse<MedicalDocFile> groupFiles) {
+    public static void displayFilesInfo(ProcessResponse<MedicalDocFile> groupFiles,
+                                        Label countSuccessFilesLabel,
+                                        Label countSuccessForInputLabel,
+                                        Label countSuccessBioLabel,
+                                        VBox  errorBox,
+                                        VBox errorHandlerBox,
+                                        Label countErrorFilesLabel) {
         Platform.runLater(() -> {
-            List<MedicalDocFile> completed = CollectionUtils.isEmpty(groupFiles.getSuccessFiles()) ?
-                    new ArrayList<>() : groupFiles.getSuccessFiles();
-            List<MedicalDocFile> errors = CollectionUtils.isEmpty(groupFiles.getErrorFiles()) ?
-                    new ArrayList<>() : groupFiles.getErrorFiles();
-
-            Stage window = new Stage();
-
-            window.initModality(Modality.APPLICATION_MODAL);
-            window.setTitle("Информация по обработке всех файлов");
-            setWidthAndHeight(window, 450, 450);
-            window.getIcons().add(new Image(Constants.MAIN_ICO));
-
-            TextArea textArea = new TextArea();
-            setWidthAndHeight(textArea, 370, 350);
-            textArea.setEditable(false);
-            textArea.setWrapText(true);
-
-            Map<ProcessedStatus, List<MedicalDocFile>> errorsMap;
-            if (CollectionUtils.isEmpty(errors)) {
-                errorsMap = null;
-            } else {
-                errorsMap = errors.stream()
-                        .collect(Collectors.groupingBy(FileDto::getStatus));
-            }
+            List<MedicalDocFile> completed = CollectionUtils.isEmpty(groupFiles.getSuccessFiles()) ? new ArrayList<>() : groupFiles.getSuccessFiles();
+            List<MedicalDocFile> errors = CollectionUtils.isEmpty(groupFiles.getErrorFiles()) ? new ArrayList<>() : groupFiles.getErrorFiles();
 
             Set<String> uniqBioMaterial = completed.stream()
                     .sorted(Comparator.comparing(MedicalDocFile::getBioMaterial))
                     .map(MedicalDocFile::getBioMaterial)
                     .collect(Collectors.toSet());
 
-            StringBuilder builder = new StringBuilder();
-            builder.append("Выжимка по успешным файлам").append("\n");
-            addLine(builder, "Успешно обработано", completed.size());
-            addLine(builder, "Кол-во результирующих строк для вставки", groupFiles.getCountForProcess());
-            addLine(builder, "Используемый биоматериал, уникальные", uniqBioMaterial.size());
-            emptyLine(builder);
+            countSuccessFilesLabel.setText(String.valueOf(completed.size()));
+            countSuccessForInputLabel.setText(String.valueOf(groupFiles.getCountForProcess()));
+            countSuccessBioLabel.setText(String.valueOf(uniqBioMaterial.size()));
 
-            builder.append("Выжимка по неподходящим файлам [%s]".formatted(errors.size())).append("\n");
-            addLine(builder, errorsMap, MEDICAL_FILE_IS_EMPTY, false);
-            addLine(builder, errorsMap, ANTI_V1_IS_EMPTY, false);
-            addLine(builder, errorsMap, ANTI_V1_FAILED, true);
-            addLine(builder, errorsMap, ANTI_V2_FIRST_STEP, false);
-            addLine(builder, errorsMap, ANTI_V2_SECOND_STEP, true);
-            addLine(builder, errorsMap, FILE_NO_TEMPLATE, false);
-            addLine(builder, errorsMap, FAILED_READ, true);
-            addLine(builder, errorsMap, FAILED_PROCESS, true);
-            addLine(builder, errorsMap, WRONG_CODING, true);
-            emptyLine(builder);
-            addLine(builder, "Всего обработано файлов", completed.size() + errors.size());
+            if (!CollectionUtils.isEmpty(errors)) {
+                errorBox.setVisible(true);
+                errorHandlerBox.getChildren().clear();
 
-            textArea.setText(builder.toString());
+                countErrorFilesLabel.setText(String.valueOf(errors.size()));
 
-            Button closeButton = new Button("Закрыть");
-            closeButton.setOnAction(e -> window.close());
+                Map<ProcessedStatus, List<MedicalDocFile>> errorsMap = errors.stream().collect(Collectors.groupingBy(FileDto::getStatus));
 
-            VBox layout = new VBox(10);
-            layout.getChildren().addAll(textArea, closeButton);
-            layout.setAlignment(Pos.CENTER);
+                addTypedErrorMessage(errorHandlerBox, errorsMap, MEDICAL_FILE_IS_EMPTY, true);//f
+                addTypedErrorMessage(errorHandlerBox, errorsMap, ANTI_V1_IS_EMPTY, true); //f
+                addTypedErrorMessage(errorHandlerBox, errorsMap, ANTI_V1_FAILED, true);
+                addTypedErrorMessage(errorHandlerBox, errorsMap, ANTI_V2_FIRST_STEP, true);//f
+                addTypedErrorMessage(errorHandlerBox, errorsMap, ANTI_V2_SECOND_STEP, true);
+                addTypedErrorMessage(errorHandlerBox, errorsMap, FILE_NO_TEMPLATE, true);//f
+                addTypedErrorMessage(errorHandlerBox, errorsMap, FAILED_READ, true);
+                addTypedErrorMessage(errorHandlerBox, errorsMap, FAILED_PROCESS, true);
+                addTypedErrorMessage(errorHandlerBox, errorsMap, WRONG_CODING, true);
 
-            Scene scene = new Scene(layout);
-            window.setScene(scene);
-            window.showAndWait();
+                errorHandlerBox.setVisible(true);
+            }
+
+
         });
     }
 
@@ -213,6 +200,71 @@ public class FileBox {
 
     private static void addLine(StringBuilder builder, String key, Integer value) {
         builder.append(key).append(": ").append(value).append("\n");
+    }
+
+    private static void addTypedErrorMessage(VBox errorHandlerBox,
+                                             Map<ProcessedStatus, List<MedicalDocFile>> errorsMap,
+                                             ProcessedStatus status,
+                                             Boolean isAddedFiles) {
+        if (errorsMap == null || CollectionUtils.isEmpty(errorsMap.get(status))) {
+            return;
+        }
+
+        Button toggleButton = new Button(/*"▼"*/);
+        toggleButton.getStyleClass().add("toggle-button");
+        setWidthAndHeight(toggleButton, 20, 20);
+        toggleButton.setGraphic(buildSize20(ImageFactory.ImageName.OPEN));
+        toggleButton.setStyle("""
+                -fx-background-color: transparent;
+                -fx-cursor: hand;
+                """);
+
+        ListView<String> listContent = new ListView<>();
+        setWidthAndHeight(listContent, 430, 390);
+        listContent.getStylesheets().add(PATCH_CSS + "standart-list.css");
+        if (isAddedFiles) {
+            for (MedicalDocFile doc : errorsMap.get(status)) {
+                listContent.getItems().add(doc.getFilename());
+            }
+        } else {
+            toggleButton.setVisible(false);
+        }
+
+        Label name = new Label(status.getMessage() + ": ");
+        name.setStyle("""
+                -fx-font-size: 14px;
+                -fx-font-family: "Bookman Old Style";
+                -fx-text-fill: #f47874
+                """);
+        Label count = new Label(String.valueOf(errorsMap.get(status).size()));
+        count.setStyle("""
+                -fx-font-size: 14px;
+                -fx-font-family: "Verdana";
+                """);
+        HBox title = new HBox(10, name, count, toggleButton);
+
+        VBox container = new VBox(10, title);
+        errorHandlerBox.getChildren().addAll(container);
+
+        toggleButton.setOnAction(e -> {
+            Platform.runLater(() -> {
+                Stage window = new Stage();
+
+                window.initModality(Modality.APPLICATION_MODAL);
+                window.setTitle(status.getMessage());
+                setWidthAndHeight(window, 450, 450);
+                window.getIcons().add(new Image(Constants.MAIN_ICO));
+
+                VBox layout = new VBox(10);
+                HBox box = new HBox(listContent);
+                box.setAlignment(Pos.CENTER);
+                layout.getChildren().addAll(box);
+
+                Scene scene = new Scene(layout);
+                window.setScene(scene);
+                window.showAndWait();
+            });
+        });
     }
 
     private static void addLine(StringBuilder builder,

@@ -144,9 +144,9 @@ public class MedicalTemplate implements SheetTemplate<MedicalDocFile, MedicalSet
         }
 
         CreationHelper createHelper = sheet.getWorkbook().getCreationHelper();
-        for (Map.Entry<String, LinkedList<String>> column : settings.getColumns().entrySet()) {
+        for (Map.Entry<String, List<String>> column : settings.getColumns().entrySet()) {
             String cellValue = column.getKey().replace("_", "/");
-            Cell cell = addCellWithComment(createHelper, drawing, column.getValue().getFirst(), row, cellValue, headerTableStyle);
+            Cell cell = addCellWithComment(createHelper, drawing, column.getValue().get(0), row, cellValue, headerTableStyle);
             SheetStyle.setLastCollWidthAuto(sheet);
         }
     }
@@ -185,7 +185,7 @@ public class MedicalTemplate implements SheetTemplate<MedicalDocFile, MedicalSet
             addEnabledCell(columnEnabled.isIb(), row, doc.getIb(), style);
             addEnabledCell(columnEnabled.isNumberAnalyze(), row, doc.getNumberAnalyze(), style);
 
-            for (Map.Entry<String, LinkedList<String>> column : settings.getColumns().entrySet()) {
+            for (Map.Entry<String, List<String>> column : settings.getColumns().entrySet()) {
                 AntibioticGram.AntibioticoGramItem anti = items.stream()
                         .filter(a -> column.getValue().stream().anyMatch(val -> val.equalsIgnoreCase(a.name)))
                         .findFirst().orElse(null);

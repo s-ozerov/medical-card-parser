@@ -18,7 +18,7 @@ import java.util.TreeMap;
 @Slf4j
 public class MedicalSettingsManager {
 
-    private static final String FILE_NAME_SETTINGS = "settings";
+    private static final String FILE_NAME_SETTINGS = "settings.txt";
     private static final String PATH_SETTINGS = System.getProperty("user.dir") + "\\" + FILE_NAME_SETTINGS;
 
     public static MedicalSettingsDto saveSettings(MedicalSettingsDto settings) {
@@ -57,7 +57,7 @@ public class MedicalSettingsManager {
 
 
     private static MedicalSettingsDto defaultSettings() {
-        Map<String, LinkedList<String>> columns = new TreeMap<>();
+        Map<String, List<String>> columns = new TreeMap<>();
         columns.put("AMP", new LinkedList<>(List.of("Ампициллин")));
         columns.put("AZIT", new LinkedList<>(List.of("Азитромицинк")));
         columns.put("AMP_SUL", new LinkedList<>(List.of("Ампициллин/сульбактам")));
@@ -106,10 +106,12 @@ public class MedicalSettingsManager {
         columns.put("CEF", new LinkedList<>(List.of("Цефокситин")));
 
         return MedicalSettingsDto.builder()
-                .lastPatch("user.home")
+                .lastFilePatch(System.getProperty("user.home"))
+                .lastFolderPatch(System.getProperty("user.home"))
                 .currentTheme(Theme.DARK)
                 .columnEnabled(MedicalSettingsDto.ColumnEnabledSettings.builder()
                         .month(true)
+                        .microorganisms(true)
                         .ib(false)
                         .bioMaterial(true)
                         .diagnose(false)

@@ -1,0 +1,50 @@
+/* Светлая тема для ListView */
+.list-view {
+    -fx-background-color: #f4f4f4; /* Светлый фон */
+    -fx-border-color: #cccccc; /* Светлая граница */
+    -fx-border-width: 1px;
+    -fx-border-radius: 5px; /* Закругление углов границы */
+    -fx-background-radius: 5px; /* Закругление углов фона */
+}
+
+/* Стиль для ячеек ListView */
+.list-cell {
+    -fx-background-color: #ffffff; /* Белый фон ячеек */
+    -fx-text-fill: #333333; /* Темный текст */
+    -fx-font-size: 14px;
+    -fx-font-family: "Arial";
+}
+
+/* Стиль для выбранной ячейки */
+.list-cell:filled:selected {
+    -fx-background-color: #2196F3; /* Синий фон для выбранной ячейки */
+    -fx-text-fill: white; /* Белый текст */
+}
+
+/* Стиль для ячейки при наведении */
+.list-cell:filled:hover {
+    -fx-background-color: #e0e0e0; /* Светлый фон при наведении */
+}
+
+/* Стиль для полосы прокрутки */
+.list-view .scroll-bar:vertical {
+    -fx-background-color: #f4f4f4; /* Светлый фон полосы прокрутки */
+}
+
+.list-view .scroll-bar:vertical .thumb {
+    -fx-background-color: #0b7ef6; /* Цвет ползунка */
+    -fx-background-radius: 3px; /* Закругление углов ползунка */
+}
+
+.list-view .scroll-bar:horizontal {
+    -fx-background-color: #0b7ef6; /* Светлый фон полосы прокрутки */
+}
+
+.list-view .scroll-bar:horizontal .thumb {
+    -fx-background-color: #0b7ef6; /* Цвет ползунка */
+    -fx-background-radius: 3px; /* Закругление углов ползунка */
+}
+
+.list-view .scroll-bar:vertical .thumb:hover {
+    -fx-background-color: #0b7ef6; /* Цвет ползунка при наведении */
+}

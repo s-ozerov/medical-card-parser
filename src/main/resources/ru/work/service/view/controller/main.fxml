@@ -1,54 +1,66 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.scene.Cursor?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.CheckBox?>
 <?import javafx.scene.control.ChoiceBox?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.Tab?>
 <?import javafx.scene.control.TabPane?>
 <?import javafx.scene.control.Tooltip?>
+<?import javafx.scene.Cursor?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
-
-<HBox maxHeight="541.0" maxWidth="930.0" minHeight="-Infinity" minWidth="-Infinity" prefHeight="540.0" prefWidth="930.0" xmlns="http://javafx.com/javafx/18" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ru.work.service.view.controller.MainController">
+<HBox maxHeight="541.0" maxWidth="930.0" minHeight="-Infinity" minWidth="-Infinity" prefHeight="540.0" prefWidth="930.0"
+      xmlns="http://javafx.com/javafx/18" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="ru.work.service.view.controller.MainController">
     <VBox prefHeight="457.0" prefWidth="310.0">
         <children>
             <VBox prefHeight="130.0" prefWidth="310.0">
                 <children>
                     <AnchorPane prefHeight="90.0" prefWidth="310.0">
                         <children>
-                            <Button fx:id="downloadButton" layoutX="177.0" layoutY="12.0" mnemonicParsing="false" prefHeight="82.0" prefWidth="52.0">
+                            <Button fx:id="downloadButton" layoutX="177.0" layoutY="12.0" mnemonicParsing="false"
+                                    prefHeight="82.0" prefWidth="52.0">
                                 <font>
-                                    <Font name="Georgia" size="12.0" />
-                                </font>
-                        <tooltip>
-                           <Tooltip text="Сохранить результат в файл Excel" />
-                        </tooltip>
-                            </Button>
-                            <Button fx:id="openButton" alignment="CENTER" contentDisplay="CENTER" layoutX="14.0" layoutY="13.0" mnemonicParsing="false" prefHeight="32.0" prefWidth="32.0" textAlignment="CENTER">
-                                <font>
-                                    <Font name="Georgia" size="12.0" />
+                                    <Font name="Georgia" size="12.0"/>
                                 </font>
                                 <tooltip>
-                                    <Tooltip text="Обработать 1 файл DOC или DOCX" />
+                                    <Tooltip text="Сохранить результат в файл Excel"/>
                                 </tooltip>
                             </Button>
-                            <Button fx:id="openMultipleButton" alignment="CENTER" contentDisplay="CENTER" layoutX="14.0" layoutY="58.0" mnemonicParsing="false" prefHeight="32.0" prefWidth="32.0" textAlignment="CENTER">
+                            <Button fx:id="openButton" alignment="CENTER" contentDisplay="CENTER" layoutX="14.0"
+                                    layoutY="13.0" mnemonicParsing="false" prefHeight="32.0" prefWidth="32.0"
+                                    textAlignment="CENTER">
                                 <font>
-                                    <Font name="Georgia" size="12.0" />
+                                    <Font name="Georgia" size="12.0"/>
                                 </font>
                                 <tooltip>
-                                    <Tooltip text="Обработка нескольких файлов DOC или DOCX которые находятся в папке" />
+                                    <Tooltip text="Выбрать 1 файл DOC или DOCX"/>
                                 </tooltip>
                             </Button>
-                            <Button fx:id="startButton" alignment="CENTER" contentDisplay="CENTER" layoutX="58.0" layoutY="13.0" mnemonicParsing="false" prefHeight="81.0" prefWidth="106.0" text="Получить" textAlignment="CENTER" wrapText="true">
+                            <Button fx:id="openMultipleButton" alignment="CENTER" contentDisplay="CENTER" layoutX="14.0"
+                                    layoutY="58.0" mnemonicParsing="false" prefHeight="32.0" prefWidth="32.0"
+                                    textAlignment="CENTER">
                                 <font>
-                                    <Font name="Georgia" size="12.0" />
+                                    <Font name="Georgia" size="12.0"/>
                                 </font>
+                                <tooltip>
+                                    <Tooltip text="Выбрать нескольких файлов DOC или DOCX"/>
+                                </tooltip>
+                            </Button>
+                            <Button fx:id="startButton" alignment="CENTER" contentDisplay="CENTER" layoutX="58.0"
+                                    layoutY="13.0" mnemonicParsing="false" prefHeight="81.0" prefWidth="106.0"
+                                    text="Получить" textAlignment="CENTER" wrapText="true">
+                                <font>
+                                    <Font name="Georgia" size="12.0"/>
+                                </font>
+                                <tooltip>
+                                    <Tooltip text="Обработать файл/файлы по указанному пути"/>
+                                </tooltip>
                             </Button>
                         </children>
                     </AnchorPane>
@@ -58,10 +70,14 @@
                 <children>
                     <AnchorPane prefHeight="461.0" prefWidth="310.0" stylesheets="@../css/standart-list.css">
                         <children>
-                            <ListView fx:id="fileList" layoutX="11.0" layoutY="5.0" prefHeight="428.0" prefWidth="287.0" styleClass="../css/standart-list.css">
+                            <ListView fx:id="fileList" layoutX="11.0" layoutY="5.0" prefHeight="428.0" prefWidth="287.0"
+                                      styleClass="../css/standart-list.css">
                                 <cursor>
-                                    <Cursor fx:constant="DEFAULT" />
+                                    <Cursor fx:constant="DEFAULT"/>
                                 </cursor>
+                                <tooltip>
+                                    <Tooltip text="Список файлов DOC и DOCX по пути"/>
+                                </tooltip>
                             </ListView>
                         </children>
                     </AnchorPane>
@@ -77,65 +93,270 @@
                         <content>
                             <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="514.0" prefWidth="610.0">
                                 <children>
-                                    <ListView fx:id="logView" layoutX="5.0" layoutY="14.0" prefHeight="490.0" prefWidth="599.0" />
-                                    <Button fx:id="clearLogButton" layoutX="539.0" layoutY="440.0" mnemonicParsing="false" prefHeight="48.0" prefWidth="48.0" textAlignment="CENTER" wrapText="true">
+                                    <ListView fx:id="logView" layoutX="5.0" layoutY="14.0" prefHeight="490.0"
+                                              prefWidth="599.0"/>
+                                    <Button fx:id="clearLogButton" layoutX="539.0" layoutY="440.0"
+                                            mnemonicParsing="false" prefHeight="48.0" prefWidth="48.0"
+                                            textAlignment="CENTER" wrapText="true">
                                         <font>
-                                            <Font name="Georgia" size="10.0" />
+                                            <Font name="Georgia" size="10.0"/>
                                         </font>
                                         <tooltip>
-                                            <Tooltip text="Очистка журнала" />
+                                            <Tooltip text="Очистка журнала"/>
                                         </tooltip>
                                     </Button>
                                 </children>
                             </AnchorPane>
                         </content>
+                        <tooltip>
+                            <Tooltip text="Логи выполнения программы"/>
+                        </tooltip>
                     </Tab>
                     <Tab text="Результат">
                         <content>
                             <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
-                        <children>
-                                  <Label fx:id="countNameLabel" alignment="TOP_LEFT" layoutX="14.0" layoutY="14.0" prefHeight="19.0" prefWidth="99.0" text="Кол-во файлов:" textFill="#4a89ff" textOverrun="WORD_ELLIPSIS" wrapText="true">
-                                      <font>
-                                          <Font name="Segoe UI" size="12.0" />
-                                      </font>
-                                  </Label>
-                                  <Label fx:id="countLabel" alignment="TOP_LEFT" layoutX="113.0" layoutY="14.0" prefHeight="19.0" prefWidth="39.0" textFill="#4a89ff" textOverrun="WORD_ELLIPSIS" wrapText="true">
-                                      <font>
-                                          <Font name="Segoe UI" size="12.0" />
-                                      </font>
-                                  </Label>
-                                  <Button fx:id="showErrorsButton" layoutX="14.0" layoutY="45.0" mnemonicParsing="false" prefHeight="26.0" prefWidth="126.0" text="Результат">
-                                      <font>
-                                          <Font name="Georgia" size="10.0" />
-                                      </font>
-                                  </Button>
-                        </children></AnchorPane>
+                                <children>
+                                    <VBox layoutX="14.0" layoutY="43.0" prefHeight="112.0" prefWidth="563.0"
+                                          style="-fx-border-color: #7bcbfa; -fx-border-width: 2px; -fx-border-radius: 5px; -fx-border-style: solid; -fx-padding: 10px;">
+                                        <children>
+                                            <Label fx:id="countNameLabel1" alignment="TOP_LEFT" prefHeight="26.0"
+                                                   prefWidth="202.0" text="Успешно обработанные" textFill="#3e77e1"
+                                                   textOverrun="WORD_ELLIPSIS" wrapText="true">
+                                                <font>
+                                                    <Font name="System Bold" size="16.0"/>
+                                                </font>
+                                            </Label>
+                                            <HBox prefHeight="23.0" prefWidth="334.0">
+                                                <children>
+                                                    <Label fx:id="label01" alignment="TOP_LEFT" prefHeight="23.0"
+                                                           prefWidth="62.0" text="Файлов:" textFill="#4a89ff"
+                                                           textOverrun="WORD_ELLIPSIS" wrapText="true">
+                                                        <font>
+                                                            <Font name="Bookman Old Style" size="14.0"/>
+                                                        </font>
+                                                    </Label>
+                                                    <Label fx:id="countSuccessFilesLabel" alignment="TOP_LEFT"
+                                                           prefHeight="20.0" prefWidth="52.0" text="0"
+                                                           textOverrun="WORD_ELLIPSIS" wrapText="true">
+                                                        <font>
+                                                            <Font name="Verdana" size="14.0"/>
+                                                        </font>
+                                                    </Label>
+                                                </children>
+                                            </HBox>
+                                            <HBox prefHeight="23.0" prefWidth="334.0">
+                                                <children>
+                                                    <Label fx:id="label0112" alignment="TOP_LEFT" prefHeight="23.0"
+                                                           prefWidth="242.0" text="Строк для вставки в XLSX файл:"
+                                                           textFill="#4a89ff" textOverrun="WORD_ELLIPSIS"
+                                                           wrapText="true">
+                                                        <font>
+                                                            <Font name="Bookman Old Style" size="14.0"/>
+                                                        </font>
+                                                    </Label>
+                                                    <Label fx:id="countSuccessForInputLabel" alignment="TOP_LEFT"
+                                                           prefHeight="20.0" prefWidth="52.0" text="0"
+                                                           textOverrun="WORD_ELLIPSIS" wrapText="true">
+                                                        <font>
+                                                            <Font name="Verdana" size="14.0"/>
+                                                        </font>
+                                                    </Label>
+                                                </children>
+                                            </HBox>
+                                            <HBox prefHeight="23.0" prefWidth="334.0">
+                                                <children>
+                                                    <Label fx:id="label0111" alignment="TOP_LEFT" prefHeight="23.0"
+                                                           prefWidth="209.0" text="Используемый биоматериал:"
+                                                           textFill="#4a89ff" textOverrun="WORD_ELLIPSIS"
+                                                           wrapText="true">
+                                                        <font>
+                                                            <Font name="Bookman Old Style" size="14.0"/>
+                                                        </font>
+                                                    </Label>
+                                                    <Label fx:id="countSuccessBioLabel" alignment="TOP_LEFT"
+                                                           prefHeight="20.0" prefWidth="52.0" text="0"
+                                                           textOverrun="WORD_ELLIPSIS" wrapText="true">
+                                                        <font>
+                                                            <Font name="Verdana" size="14.0"/>
+                                                        </font>
+                                                    </Label>
+                                                </children>
+                                            </HBox>
+                                        </children>
+                                    </VBox>
+                                    <Label fx:id="countNameLabel" alignment="TOP_LEFT" layoutX="14.0" layoutY="14.0"
+                                           prefHeight="19.0" prefWidth="237.0" text="Файлов DOC и DOCX в выборке:"
+                                           textFill="#4a89ff" textOverrun="WORD_ELLIPSIS" wrapText="true">
+                                        <font>
+                                            <Font name="Bookman Old Style" size="14.0"/>
+                                        </font>
+                                    </Label>
+                                    <Label fx:id="countLabel" alignment="TOP_LEFT" layoutX="252.0" layoutY="14.0"
+                                           prefHeight="20.0" prefWidth="52.0" text="0" textOverrun="WORD_ELLIPSIS"
+                                           wrapText="true">
+                                        <font>
+                                            <Font name="Verdana" size="14.0"/>
+                                        </font>
+                                    </Label>
+                                    <VBox fx:id="errorBox" layoutX="14.0" layoutY="173.0" prefHeight="326.0"
+                                          prefWidth="564.0"
+                                          style="-fx-border-color: #f47874; -fx-border-width: 2px; -fx-border-radius: 5px; -fx-border-style: solid; -fx-padding: 10px;">
+                                        <children>
+                                            <Label fx:id="countNameLabel11" alignment="TOP_LEFT" prefHeight="26.0"
+                                                   prefWidth="321.0" text="Ошибки в обработке и неподходящие"
+                                                   textFill="#f43b1a" textOverrun="WORD_ELLIPSIS" wrapText="true">
+                                                <font>
+                                                    <Font name="System Bold" size="16.0"/>
+                                                </font>
+                                            </Label>
+                                            <HBox prefHeight="23.0" prefWidth="334.0">
+                                                <children>
+                                                    <Label fx:id="label011" alignment="TOP_LEFT" prefHeight="23.0"
+                                                           prefWidth="62.0" text="Файлов:" textFill="#f47874"
+                                                           textOverrun="WORD_ELLIPSIS" wrapText="true">
+                                                        <font>
+                                                            <Font name="Bookman Old Style" size="14.0"/>
+                                                        </font>
+                                                    </Label>
+                                                    <Label fx:id="countErrorFilesLabel" alignment="TOP_LEFT"
+                                                           prefHeight="20.0" prefWidth="52.0" text="0"
+                                                           textOverrun="WORD_ELLIPSIS" wrapText="true">
+                                                        <font>
+                                                            <Font name="Verdana" size="14.0"/>
+                                                        </font>
+                                                    </Label>
+                                                </children>
+                                            </HBox>
+                                            <HBox prefHeight="17.0" prefWidth="540.0">
+                                                <children>
+                                                    <Label fx:id="label0113" alignment="TOP_CENTER"
+                                                           contentDisplay="CENTER" prefHeight="23.0" prefWidth="540.0"
+                                                           text="Описание:" textAlignment="CENTER" textFill="#f47874"
+                                                           textOverrun="WORD_ELLIPSIS" wrapText="true">
+                                                        <font>
+                                                            <Font name="Bookman Old Style" size="14.0"/>
+                                                        </font>
+                                                    </Label>
+                                                </children>
+                                            </HBox>
+                                            <ScrollPane prefHeight="264.0" prefWidth="540.0">
+                                                <content>
+                                                    <AnchorPane fx:id="errorHandlerPane" minHeight="0.0" minWidth="0.0"
+                                                                prefHeight="304.0" prefWidth="729.0">
+                                                        <children>
+                                                            <VBox fx:id="errorHandlerBox" prefHeight="297.0"
+                                                                  prefWidth="963.0"/>
+                                                        </children>
+                                                    </AnchorPane>
+                                                </content>
+                                            </ScrollPane>
+                                        </children>
+                                    </VBox>
+                                </children>
+                            </AnchorPane>
                         </content>
+                        <tooltip>
+                            <Tooltip text="Информация по обработаному(ым) файлу(ам)"/>
+                        </tooltip>
                     </Tab>
                     <Tab text="Настройки">
                         <content>
                             <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
                                 <children>
-                                    <ChoiceBox fx:id="themeBox" layoutX="187.0" layoutY="13.0" prefHeight="26.0" prefWidth="118.0" />
-                                    <Label layoutX="14.0" layoutY="18.0" text="Изменить текущую тему:" />
-                           <VBox layoutX="14.0" layoutY="62.0" prefHeight="141.0" prefWidth="387.0">
-                              <children>
-                                 <Label text="Выберете колонки, которые будут отображаться в таблице:" />
-                                 <CheckBox fx:id="monthCB" mnemonicParsing="false" selected="true" text="Месяц" />
-                                 <CheckBox fx:id="microorganismsCB" mnemonicParsing="false" selected="true" text="Бактерии" />
-                                 <CheckBox fx:id="divisionCB" mnemonicParsing="false" selected="true" text="Отделение" />
-                                 <CheckBox fx:id="bioMaterialCB" mnemonicParsing="false" text="Биоматериал" />
-                                 <CheckBox fx:id="receiveMaterialDateCB" mnemonicParsing="false" text="Дата поступления материала" />
-                                 <CheckBox fx:id="filenameCB" mnemonicParsing="false" text="Название файла" />
-                                 <CheckBox fx:id="patientCB" mnemonicParsing="false" text="Пациент" />
-                                 <CheckBox fx:id="diagnoseCB" mnemonicParsing="false" text="Диагноз" />
-                                 <CheckBox fx:id="ibCB" mnemonicParsing="false" text="ИБ" />
-                                 <CheckBox fx:id="numberAnalyzeCB" mnemonicParsing="false" text="№ анализа" />
-                              </children>
-                           </VBox>
-                           <Button fx:id="saveSettingsButton" alignment="CENTER" contentDisplay="CENTER" layoutX="409.0" layoutY="11.0" mnemonicParsing="false" prefHeight="32.0" prefWidth="186.0" text="Сохранить изменения" textAlignment="CENTER" wrapText="true" />
+                                    <ChoiceBox fx:id="themeBox" layoutX="208.0" layoutY="14.0" prefHeight="26.0"
+                                               prefWidth="118.0"/>
+                                    <Label layoutX="14.0" layoutY="18.0" text="Изменить текущую тему:"
+                                           textFill="#4782ef">
+                                        <font>
+                                            <Font name="Bookman Old Style Bold" size="14.0"/>
+                                        </font>
+                                    </Label>
+                                    <VBox layoutX="14.0" layoutY="50.0" prefHeight="270.0" prefWidth="435.0">
+                                        <children>
+                                            <Label prefHeight="42.0" prefWidth="435.0"
+                                                   text="Выберете колонки, которые будут отображаться в таблице:"
+                                                   textFill="#4782ef">
+                                                <font>
+                                                    <Font name="Bookman Old Style Bold" size="14.0"/>
+                                                </font>
+                                            </Label>
+                                            <CheckBox fx:id="monthCB" mnemonicParsing="false" selected="true"
+                                                      text="Месяц" textFill="#4a89ff">
+                                                <font>
+                                                    <Font name="Bookman Old Style" size="14.0"/>
+                                                </font>
+                                            </CheckBox>
+                                            <CheckBox fx:id="microorganismsCB" mnemonicParsing="false" selected="true"
+                                                      text="Бактерии" textFill="#4a89ff">
+                                                <font>
+                                                    <Font name="Bookman Old Style" size="14.0"/>
+                                                </font>
+                                            </CheckBox>
+                                            <CheckBox fx:id="divisionCB" mnemonicParsing="false" selected="true"
+                                                      text="Отделение" textFill="#4a89ff">
+                                                <font>
+                                                    <Font name="Bookman Old Style" size="14.0"/>
+                                                </font>
+                                            </CheckBox>
+                                            <CheckBox fx:id="bioMaterialCB" mnemonicParsing="false" text="Биоматериал"
+                                                      textFill="#4a89ff">
+                                                <font>
+                                                    <Font name="Bookman Old Style" size="14.0"/>
+                                                </font>
+                                            </CheckBox>
+                                            <CheckBox fx:id="receiveMaterialDateCB" mnemonicParsing="false"
+                                                      text="Дата поступления материала" textFill="#4a89ff">
+                                                <font>
+                                                    <Font name="Bookman Old Style" size="14.0"/>
+                                                </font>
+                                            </CheckBox>
+                                            <CheckBox fx:id="filenameCB" mnemonicParsing="false" text="Название файла"
+                                                      textFill="#4a89ff">
+                                                <font>
+                                                    <Font name="Bookman Old Style" size="14.0"/>
+                                                </font>
+                                            </CheckBox>
+                                            <CheckBox fx:id="patientCB" mnemonicParsing="false" text="Пациент"
+                                                      textFill="#4a89ff">
+                                                <font>
+                                                    <Font name="Bookman Old Style" size="14.0"/>
+                                                </font>
+                                            </CheckBox>
+                                            <CheckBox fx:id="diagnoseCB" mnemonicParsing="false" text="Диагноз"
+                                                      textFill="#4a89ff">
+                                                <font>
+                                                    <Font name="Bookman Old Style" size="14.0"/>
+                                                </font>
+                                            </CheckBox>
+                                            <CheckBox fx:id="ibCB" mnemonicParsing="false" text="ИБ" textFill="#4a89ff">
+                                                <font>
+                                                    <Font name="Bookman Old Style" size="14.0"/>
+                                                </font>
+                                            </CheckBox>
+                                            <CheckBox fx:id="numberAnalyzeCB" mnemonicParsing="false" text="№ анализа"
+                                                      textFill="#4a89ff">
+                                                <font>
+                                                    <Font name="Bookman Old Style" size="14.0"/>
+                                                </font>
+                                            </CheckBox>
+                                        </children>
+                                    </VBox>
+                                    <Button fx:id="saveSettingsButton" alignment="CENTER" contentDisplay="CENTER"
+                                            layoutX="14.0" layoutY="326.0" mnemonicParsing="false" prefHeight="68.0"
+                                            prefWidth="238.0" text="Сохранить изменения" textAlignment="CENTER"
+                                            wrapText="true"/>
+                                    <Button fx:id="changeAntibioticiButton" alignment="CENTER" contentDisplay="CENTER"
+                                            layoutX="305.0" layoutY="326.0" mnemonicParsing="false" prefHeight="68.0"
+                                            prefWidth="238.0" text="Изменить отображение антибиотиков по столбцам"
+                                            textAlignment="CENTER" wrapText="true"/>
                                 </children>
                             </AnchorPane>
+                        </content>
+                    </Tab>
+                    <Tab text="Инструкция">
+                        <content>
+                            <AnchorPane fx:id="antibioticoAnchor" minHeight="0.0" minWidth="0.0" prefHeight="180.0"
+                                        prefWidth="200.0"/>
                         </content>
                     </Tab>
                 </tabs>

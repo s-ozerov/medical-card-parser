@@ -7,6 +7,9 @@ public class Constants {
     public static Theme CURRENT_THEME = Theme.LIGHT;
     public static final BigDecimal SMALL_FILE_SIZE = new BigDecimal(50);
 
+    public static final String PATCH_IMAGE = "image/";
+    public static final String PATCH_CSS = "ru/work/service/view/css/";
+
     public static final String MAIN_ICO = "image/main.png";
     public static final String WARN_ICO = "image/warn.png";
 

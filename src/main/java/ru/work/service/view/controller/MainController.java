@@ -4,15 +4,15 @@ import atlantafx.base.theme.PrimerDark;
 import atlantafx.base.theme.PrimerLight;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.ProgressBar;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.layout.VBox;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import lombok.RequiredArgsConstructor;
@@ -20,22 +20,28 @@ import lombok.extern.slf4j.Slf4j;
 import net.rgielen.fxweaver.core.FxmlView;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
+import ru.work.service.anotations.Css;
 import ru.work.service.dto.DownloadDto;
 import ru.work.service.dto.FileDto;
 import ru.work.service.dto.ProcessResponse;
 import ru.work.service.dto.enums.Extension;
 import ru.work.service.dto.enums.ProcessedStatus;
 import ru.work.service.dto.medical.MedicalDocFile;
+import ru.work.service.dto.medical.MedicalSettingsDto;
 import ru.work.service.helper.FileHelper;
+import ru.work.service.service.manager.MedicalSettingsManager;
 import ru.work.service.service.sheet.MedicalFileHandler;
 import ru.work.service.view.JavaFxApplication;
 import ru.work.service.view.component.DownloadComponent;
 import ru.work.service.view.component.ExceptionBox;
 import ru.work.service.view.component.FileBox;
+import ru.work.service.view.component.modal.NestedListComponent;
 import ru.work.service.view.factory.LogFactory;
 import ru.work.service.view.util.ControllerUtil;
+import ru.work.service.view.util.ImageFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -52,6 +58,9 @@ import static java.util.Objects.nonNull;
 import static ru.work.service.dto.enums.Extension.DOC;
 import static ru.work.service.dto.enums.Extension.DOCX;
 import static ru.work.service.view.util.Constants.CURRENT_THEME;
+import static ru.work.service.view.util.ImageFactory.buildSize36;
+import static ru.work.service.view.util.ImageFactory.buildSize48;
+import static ru.work.service.view.util.StyleFactory.setTheme;
 import static ru.work.service.view.util.Theme.DARK;
 import static ru.work.service.view.util.Theme.LIGHT;
 
@@ -61,30 +70,82 @@ import static ru.work.service.view.util.Theme.LIGHT;
 @FxmlView("main.fxml")
 public class MainController {
 
+    private MainController mainController;
+
+    @Autowired
+    public void setSelf(MainController self) {
+        this.mainController = self;
+    }
+
     @FXML
+    @Css(dark = "log-list-dark.css", light = "log-list-light.css")
     private ListView<String> logView;
+
     @FXML
+    @Css(dark = "file-list-dark.css", light = "file-list-light.css")
     private ListView<MedicalDocFile> fileList;
 
     @FXML
+    @Css(dark = "button-super-dark.css", light = "button-super-light.css")
     private Button startButton;
+
     @FXML
+    @Css(dark = "button-icon-dark.css", light = "button-icon-light.css")
     private Button openButton;
+
     @FXML
+    @Css(dark = "button-icon-dark.css", light = "button-icon-light.css")
     private Button openMultipleButton;
+
+    @FXML
+    @Css(dark = "button-super-dark.css", light = "button-super-light.css")
+    private Button saveSettingsButton;
+
     @FXML
     private Button clearLogButton;
     @FXML
     private Button downloadButton;
     @FXML
-    private Button showErrorsButton;
+    private Button changeAntibioticiButton;
 
-    @FXML
-    private Label countNameLabel;
     @FXML
     private Label countLabel;
     @FXML
+    private Label countSuccessFilesLabel;
+    @FXML
+    private Label countSuccessForInputLabel;
+    @FXML
+    private Label countSuccessBioLabel;
+    @FXML
+    private Label countErrorFilesLabel;
+
+    @FXML
     private ChoiceBox<String> themeBox;
+    @FXML
+    private VBox errorHandlerBox;
+    @FXML
+    private VBox errorBox;
+
+    @FXML
+    private CheckBox monthCB;
+    @FXML
+    private CheckBox microorganismsCB;
+    @FXML
+    private CheckBox divisionCB;
+    @FXML
+    private CheckBox bioMaterialCB;
+    @FXML
+    private CheckBox receiveMaterialDateCB;
+    @FXML
+    private CheckBox filenameCB;
+    @FXML
+    private CheckBox patientCB;
+    @FXML
+    private CheckBox diagnoseCB;
+    @FXML
+    private CheckBox ibCB;
+    @FXML
+    private CheckBox numberAnalyzeCB;
 
     private final MedicalFileHandler medicalHandler;
     private final DownloadComponent downloadComponent;
@@ -96,27 +157,24 @@ public class MainController {
     private ProcessResponse<MedicalDocFile> processedFiles;
     private DownloadDto downloadDto;
 
+    private Map<String, List<String>> items = null;
+
     @FXML
     public void initialize() {
-        setThemeClearButton();
-        setThemeOpenButton();
-        setThemeMultipleOpenButton();
-        countNameLabel.setVisible(false);
+        initSettings();
+
+        setThemeForButtons();
+        setTheme(mainController);
+
+        errorBox.setVisible(false);
 
         _log = new LogFactory(this.getClass(), logView);
 
         initButtons();
         initListView();
-        ObservableList<String> themes = FXCollections.observableArrayList(DARK.name(), LIGHT.name());
-
-        setThemeLogView(logView);
-        setThemeSuperButton(startButton);
-        setThemeIconButton(openButton);
-        setThemeIconButton(openMultipleButton);
-        setThemeDownloadButton();
 
         themeBox.setValue(CURRENT_THEME.name());
-        themeBox.setItems(themes);
+        themeBox.setItems(FXCollections.observableArrayList(DARK.name(), LIGHT.name()));
         themeBox.setOnAction(clickEvent -> {
             if (themeBox.getValue().equalsIgnoreCase(DARK.name())) {
                 JavaFxApplication.setTheme(new PrimerDark());
@@ -125,12 +183,28 @@ public class MainController {
                 JavaFxApplication.setTheme(new PrimerLight());
                 CURRENT_THEME = LIGHT;
             }
-            setThemeSuperButton(startButton);
-            setThemeIconButton(openButton);
-            setThemeIconButton(openMultipleButton);
-            setThemeLogView(logView);
+            log.info("Current theme: {}", CURRENT_THEME);
+            setTheme(mainController);
         });
         themeBox.getStylesheets().add("/ru/work/service/view/css/choice-box.css");
+    }
+
+    private void initSettings() {
+        MedicalSettingsDto settingsDto = MedicalSettingsManager.readSettings();
+
+        CURRENT_THEME = settingsDto.getCurrentTheme();
+
+        MedicalSettingsDto.ColumnEnabledSettings enabledSettings = settingsDto.getColumnEnabled();
+        monthCB.setSelected(enabledSettings.isMonth());
+        microorganismsCB.setSelected(enabledSettings.isMicroorganisms());
+        divisionCB.setSelected(enabledSettings.isDivision());
+        bioMaterialCB.setSelected(enabledSettings.isBioMaterial());
+        receiveMaterialDateCB.setSelected(enabledSettings.isReceiveMaterialDate());
+        filenameCB.setSelected(enabledSettings.isFilename());
+        patientCB.setSelected(enabledSettings.isPatient());
+        diagnoseCB.setSelected(enabledSettings.isDiagnose());
+        ibCB.setSelected(enabledSettings.isIb());
+        numberAnalyzeCB.setSelected(enabledSettings.isNumberAnalyze());
     }
 
     private void initListView() {
@@ -149,20 +223,44 @@ public class MainController {
         openButton.getStyleClass().add("icon-button"); // Применяем стиль
         openMultipleButton.getStyleClass().add("icon-button"); // Применяем стиль
         downloadButton.getStyleClass().add("download-button"); // Применяем стиль
+        saveSettingsButton.getStyleClass().add("super-button");
 
-        showErrorsButton.setVisible(false);
-        showErrorsButton.setOnAction(e -> {
-            if (processedFiles == null) {
-                showErrorsButton.setVisible(false);
-                return;
+        saveSettingsButton.setOnAction(e -> {
+            MedicalSettingsDto settingsDto = MedicalSettingsManager.readSettings();
+            MedicalSettingsDto.ColumnEnabledSettings enabledSettings = MedicalSettingsDto.ColumnEnabledSettings
+                    .builder()
+                    .month(monthCB.isSelected())
+                    .microorganisms(microorganismsCB.isSelected())
+                    .ib(ibCB.isSelected())
+                    .bioMaterial(bioMaterialCB.isSelected())
+                    .diagnose(diagnoseCB.isSelected())
+                    .division(divisionCB.isSelected())
+                    .patient(patientCB.isSelected())
+                    .numberAnalyze(numberAnalyzeCB.isSelected())
+                    .receiveMaterialDate(receiveMaterialDateCB.isSelected())
+                    .filename(filenameCB.isSelected())
+                    .build();
+            settingsDto.setColumnEnabled(enabledSettings);
+            settingsDto.setCurrentTheme(CURRENT_THEME);
+
+            MedicalSettingsManager.saveSettings(settingsDto);
+            log.info("Settings saved");
+        });
+
+        changeAntibioticiButton.setOnAction(e -> {
+            NestedListComponent nestedListComponent = new NestedListComponent();
+            MedicalSettingsDto settingsDto = MedicalSettingsManager.readSettings();
+
+            nestedListComponent.display("Настройка антибиотикограммы", settingsDto.getColumns());
+            items = nestedListComponent.getItems();
+            if (items != null) {
+                settingsDto.setColumns(items);
             }
-            FileBox.displayFilesInfo(processedFiles);
-            _log.info("Включен просмотр обработки файла(ов).");
+            MedicalSettingsManager.saveSettings(settingsDto);
         });
 
         final FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Выбор файла");
-        fileChooser.setInitialDirectory(new File(System.getProperty("user.home")));
         fileChooser.getExtensionFilters().addAll(
                 new FileChooser.ExtensionFilter(DOC.name(), DOC.filter),
                 new FileChooser.ExtensionFilter(DOCX.name(), DOCX.filter),
@@ -172,6 +270,9 @@ public class MainController {
         startButton.setDisable(true);
 
         openButton.setOnAction(e -> {
+            MedicalSettingsDto settingsDto = MedicalSettingsManager.readSettings();
+            fileChooser.setInitialDirectory(new File(settingsDto.getLastFilePatch()));
+
             File file = fileChooser.showOpenDialog(JavaFxApplication.WINDOW);
             if (file != null) {
                 String filename = file.getName();
@@ -179,7 +280,7 @@ public class MainController {
 
                 logDelim();
 
-                _log.info("Путь к файлу <%s>", path);
+                _log.info("Путь к файлу «%s»", path);
                 _log.info("Имя файла: %s", filename);
 
                 Extension extension = Extension.fromFile(filename);
@@ -204,33 +305,44 @@ public class MainController {
                     } else {
                         this.fileList.getItems().clear();
                         countLabel.setText("");
-                        countNameLabel.setVisible(false);
-                        showErrorsButton.setVisible(false);
+                        errorBox.setVisible(false);
 
                         startButton.setDisable(false);
                         startButton.setText("Получить из файла");
                         this.currentFileInfo = currentFileInfo;
+
+                        settingsDto.setLastFilePatch(path.substring(0, path.lastIndexOf('\\')));
+                        MedicalSettingsManager.saveSettings(settingsDto);
                     }
                 }
             }
         });
 
         final DirectoryChooser directoryChooser = new DirectoryChooser();
+        directoryChooser.setTitle("Выбор папки с файлами");
+
         openMultipleButton.setOnAction(e -> {
+            MedicalSettingsDto settingsDto = MedicalSettingsManager.readSettings();
+            directoryChooser.setInitialDirectory(new File(settingsDto.getLastFolderPatch()));
+
             final File selectedDirectory = directoryChooser.showDialog(JavaFxApplication.WINDOW);
-            directoryChooser.setTitle("Выбор папки с файлами");
-            directoryChooser.setInitialDirectory(new File(System.getProperty("user.home")));
             if (selectedDirectory != null) {
                 this.currentFileInfo = null;
                 this.fileList.getItems().clear();
-                countNameLabel.setVisible(false);
                 countLabel.setText("");
-                showErrorsButton.setVisible(false);
+                errorBox.setVisible(false);
 
                 logDelim();
 
                 _log.info("Найдена папка: %s", selectedDirectory.getAbsolutePath());
                 this.currentPath = selectedDirectory.getPath();
+
+                var path = selectedDirectory.getPath();
+                settingsDto.setLastFolderPatch(path);
+                var savePath = path.substring(0, path.lastIndexOf('\\'));
+                settingsDto.setLastFolderPatch(savePath);
+                MedicalSettingsManager.saveSettings(settingsDto);
+
                 startButton.setDisable(false);
                 startButton.setText("Получить из папки");
                 downloadButton.setDisable(true);
@@ -243,17 +355,20 @@ public class MainController {
         });
 
         startButton.setOnAction(e -> Platform.runLater(() -> {
+            errorBox.setVisible(false);
+            errorHandlerBox.getChildren().clear();
+            countErrorFilesLabel.setText("0");
+
             fileList.getItems().clear();
             if (isNull(currentFileInfo)) {
                 if (StringUtils.isBlank(currentPath)) {
                     ExceptionBox.displayWarn("Ошибка", "Ошибка запуска операции. Файл или папка не выбраны");
                     _log.error("Ошибка запуска операции. Файл или папка не выбраны");
                 } else {
-                    _log.info("Поиск файлов на чтение по пути <%s>", currentPath);
+                    _log.info("Поиск файлов на чтение по пути «%s»", currentPath);
                     BiConsumer<ProgressBar, Label> startProcess = this::startProcessReadFiles;
                     Runnable processSuccess = this::processReadFilesSuccess;
                     Runnable processFailed = this::processReadFilesFailed;
-
                     try {
                         downloadComponent.startReadFiles(startProcess, processSuccess, processFailed);
                     } catch (Exception exception) {
@@ -263,18 +378,27 @@ public class MainController {
             } else {
                 startButton.setDisable(true);
                 downloadButton.setDisable(true);
-                _log.info("Поиск на чтение файла <%s> ", currentFileInfo.getFilename());
+                _log.info("Поиск на чтение файла «%s» ", currentFileInfo.getFilename());
 
                 this.processedFiles = medicalHandler.readFile(currentFileInfo);
                 if (CollectionUtils.isEmpty(processedFiles.getSuccessFiles())) {
-                    _log.error("Файл не удовлетворяет фильтрации <%s>. Контент не поддерживается.", currentFileInfo.getAbsolutePath());
+                    _log.error("Файл не удовлетворяет фильтрации «%s». Контент не поддерживается.", currentFileInfo.getAbsolutePath());
+                    FileBox.displayFilesInfo(processedFiles,
+                            countSuccessFilesLabel, countSuccessForInputLabel, countSuccessBioLabel,
+                            errorBox, errorHandlerBox, countErrorFilesLabel
+                    );
                 } else {
                     setFiles(processedFiles);
                     this.downloadDto = null;
                     downloadButton.setDisable(false);
-                    _log.info("Чтение успешно для файла <%s>", currentFileInfo.getFilename());
+
+                    FileBox.displayFilesInfo(processedFiles,
+                            countSuccessFilesLabel, countSuccessForInputLabel, countSuccessBioLabel,
+                            errorBox, errorHandlerBox, countErrorFilesLabel
+                    );
+
+                    _log.info("Чтение успешно для файла «%s»", currentFileInfo.getFilename());
                 }
-                showErrorsButton.setVisible(true);
                 startButton.setDisable(false);
             }
         }));
@@ -292,30 +416,31 @@ public class MainController {
                     if (this.downloadDto != null) {
                         try {
                             FileUtils.copyInputStreamToFile(this.downloadDto.getContent(), saveFile);
-                            _log.info("Файл повторно сохранён <%s>", saveFile.getName());
+                            _log.info("Файл повторно сохранён «%s»", saveFile.getName());
                         } catch (IOException ex) {
-                            _log.error("Не удалось сохранить файл <%s>. Ошибка: %s", saveFile.getName(), ex.getMessage());
+                            _log.error("Не удалось сохранить файл «%s». Ошибка: %s", saveFile.getName(), ex.getMessage());
                         }
                         return;
                     }
-                    _log.info("Преобразуем содержимое файла/файлов в XLSX формат по пути <%s>", saveFile.getAbsolutePath());
+                    _log.info("Преобразуем содержимое файла/файлов в XLSX формат по пути «%s»", saveFile.getAbsolutePath());
                     DownloadDto downloadDto = medicalHandler.convertDOCToXLSX(downloadFilename, processedFiles);
                     try {
                         if (downloadDto == null) {
-                            _log.error("Не удалось сохранить файл <%s>. Ошибка: %s", saveFile.getName(), "выбранный doc файл не обработан");
+                            _log.error("Не удалось сохранить файл «%s». Ошибка: %s", saveFile.getName(), "выбранный doc файл не обработан");
                         } else {
                             FileUtils.copyInputStreamToFile(downloadDto.getContent(), saveFile);
-                            _log.info("Файл успешно преобразован и сохранён <%s>", saveFile.getName());
+                            _log.info("Успешно преобразован и сохранён.");
+                            _log.info("Файл: %s", saveFile.getName());
                             if (!CollectionUtils.isEmpty(downloadDto.getNotFound())) {
                                 for (Map.Entry<String, String> entry : downloadDto.getNotFound().entrySet()) {
                                     if (!StringUtils.isNotBlank(entry.getValue())) {
-                                        _log.error("Не найдены колонки <%s>: %s", entry.getKey(), entry.getValue());
+                                        _log.error("Не найдены колонки «%s»: %s", entry.getKey(), entry.getValue());
                                     }
                                 }
                             }
                         }
                     } catch (IOException ex) {
-                        _log.error("Не удалось сохранить файл <%s>. Ошибка: %s", saveFile.getName(), ex.getMessage());
+                        _log.error("Не удалось сохранить файл «%s». Ошибка: %s", saveFile.getName(), ex.getMessage());
                     }
                 }
             } else {
@@ -331,17 +456,22 @@ public class MainController {
         startButton.setDisable(true);
         downloadButton.setDisable(true);
         processedFiles = medicalHandler.readFiles(currentPath, progressBar, label);
+
+        FileBox.displayFilesInfo(processedFiles,
+                countSuccessFilesLabel, countSuccessForInputLabel, countSuccessBioLabel,
+                errorBox, errorHandlerBox, countErrorFilesLabel
+        );
     }
 
     private void processReadFilesSuccess() {
         log.info("Success processed files: {}", currentPath);
         if (processedFiles == null || CollectionUtils.isEmpty(processedFiles.getSuccessFiles())) {
-            _log.error("Не найдены файлы удовлетворяющие фильтры <%s>", currentPath);
+            _log.error("Не найдены файлы удовлетворяющие фильтры «%s»", currentPath);
         } else {
             setFiles(processedFiles);
             downloadDto = null;
             downloadButton.setDisable(false);
-            _log.info("Чтение успешно по пути <%s>", currentPath);
+            _log.info("Чтение успешно по пути «%s»", currentPath);
         }
         disabledProcessReadFiles();
     }
@@ -355,7 +485,7 @@ public class MainController {
         openButton.setDisable(false);
         openMultipleButton.setDisable(false);
         startButton.setDisable(false);
-        showErrorsButton.setVisible(true);
+        errorBox.setVisible(true);
     }
 
     private void setFiles(ProcessResponse<MedicalDocFile> res) {
@@ -363,7 +493,6 @@ public class MainController {
                 .sorted(Comparator.comparing(MedicalDocFile::getFilename))
                 .toList();
         fileList.getItems().addAll(result);
-        countNameLabel.setVisible(true);
         countLabel.setText(String.valueOf(fileList.getItems().size()));
     }
 
@@ -373,76 +502,18 @@ public class MainController {
         }
     }
 
-    private void setThemeDownloadButton() {
-        Image icon = new Image(this.getClass().getResourceAsStream("/image/download-32.png"));
-        ImageView iconView = new ImageView(icon);
-        iconView.setFitWidth(36);
-        iconView.setFitHeight(36);
-        downloadButton.setGraphic(iconView);
-
+    private void setThemeForButtons() {
+        downloadButton.setGraphic(buildSize36(ImageFactory.ImageName.DOWNLOAD));
         String styleSheet = "/ru/work/service/view/css/button-download.css";
         downloadButton.getStylesheets().add(styleSheet);
-    }
 
-    private void setThemeOpenButton() {
-        Image icon = new Image(this.getClass().getResourceAsStream("/image/word.png"));
-        ImageView iconView = new ImageView(icon);
-        iconView.setFitWidth(36);
-        iconView.setFitHeight(36);
-        openButton.setGraphic(iconView);
-    }
-
-    private void setThemeMultipleOpenButton() {
-        Image icon = new Image(this.getClass().getResourceAsStream("/image/folder-48.png"));
-        ImageView iconView = new ImageView(icon);
-        iconView.setFitWidth(36);
-        iconView.setFitHeight(36);
-        openMultipleButton.setGraphic(iconView);
-    }
-
-    private void setThemeClearButton() {
-        Image icon = new Image(this.getClass().getResourceAsStream("/image/delete-icon.png"));
-        ImageView iconView = new ImageView(icon);
-        iconView.setFitWidth(48);
-        iconView.setFitHeight(48);
-        clearLogButton.setGraphic(iconView);
+        openButton.setGraphic(buildSize36(ImageFactory.ImageName.WORD));
+        openMultipleButton.setGraphic(buildSize36(ImageFactory.ImageName.FOLDER));
+        clearLogButton.setGraphic(buildSize48(ImageFactory.ImageName.DELETE));
         clearLogButton.setStyle("""
                 -fx-background-color: transparent;
                 -fx-cursor: hand;
                 """);
-    }
-
-    private static void setThemeLogView(ListView<String> logView) {
-        logView.getStylesheets().clear();
-        if (CURRENT_THEME == LIGHT) {
-            String styleSheet = "/ru/work/service/view/css/log-list-light.css";
-            logView.getStylesheets().add(styleSheet);
-        } else {
-            String styleSheet = "/ru/work/service/view/css/log-list-dark.css";
-            logView.getStylesheets().add(styleSheet);
-        }
-    }
-
-    private static void setThemeSuperButton(Button button) {
-        button.getStylesheets().clear();
-        if (CURRENT_THEME == LIGHT) {
-            String styleSheet = "/ru/work/service/view/css/button-super-light.css";
-            button.getStylesheets().add(styleSheet);
-        } else {
-            String styleSheet = "/ru/work/service/view/css/button-super-dark.css";
-            button.getStylesheets().add(styleSheet);
-        }
-    }
-
-    private static void setThemeIconButton(Button button) {
-        button.getStylesheets().clear();
-        if (CURRENT_THEME == LIGHT) {
-            String styleSheet = "/ru/work/service/view/css/button-icon-light.css";
-            button.getStylesheets().add(styleSheet);
-        } else {
-            String styleSheet = "/ru/work/service/view/css/button-icon-dark.css";
-            button.getStylesheets().add(styleSheet);
-        }
     }
 
 }

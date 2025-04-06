@@ -3,6 +3,7 @@ package ru.work.service.dto;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.util.CollectionUtils;
 import ru.work.service.dto.enums.ProcessedStatus;
 
 import java.util.ArrayList;
@@ -16,8 +17,8 @@ import java.util.stream.Collectors;
 public class ProcessResponse<T extends FileDto> {
 
     private Integer countForProcess = 0;
-    private List<T> successFiles = new ArrayList<>();
-    private List<T> errorFiles = new ArrayList<>();
+    private List<T> successFiles;
+    private List<T> errorFiles;
 
     public ProcessResponse(List<T> files) {
         Map<Status, List<T>> filesByStatus = files.stream()
@@ -31,6 +32,8 @@ public class ProcessResponse<T extends FileDto> {
                 }));
         this.successFiles = filesByStatus.get(Status.SUCCESS);
         this.errorFiles = filesByStatus.get(Status.ERROR);
+        this.successFiles = CollectionUtils.isEmpty(this.successFiles) ? new ArrayList<>() : this.successFiles;
+        this.errorFiles = CollectionUtils.isEmpty(this.errorFiles) ? new ArrayList<>() : this.errorFiles;
     }
 
     public enum Status {
