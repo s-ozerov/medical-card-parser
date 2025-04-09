@@ -11,6 +11,8 @@ public class Constants {
     public static final String PATCH_CSS = "ru/work/service/view/css/";
 
     public static final String MAIN_ICO = "image/main.png";
+    public static final String DOWNLOAD_ICO = "image/download-32.png";
+
     public static final String WARN_ICO = "image/warn.png";
 
     public static final Long SECOND = 1000L;

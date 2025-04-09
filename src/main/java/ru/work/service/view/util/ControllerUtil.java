@@ -21,15 +21,6 @@ public class ControllerUtil {
         newThread("blockButton", new BlockButton(button, sec));
     }
 
-    @SneakyThrows
-    public static void showAlert(String title, String message, Notifications notification) {
-        TrayNotification tray = new TrayNotification(title, message, notification);
-        tray.setAnimation(Animations.POPUP);
-        tray.setRectangleFill(Paint.valueOf("#000000"));
-        tray.setImage(new Image(MAIN_ICO));
-        tray.showAndDismiss(Duration.seconds(3));
-    }
-
     private static void newThread(String threadName, Runnable runnable) {
         new Thread(runnable, threadName).start();
     }

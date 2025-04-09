@@ -27,6 +27,7 @@ import java.time.LocalTime;
 import java.util.Arrays;
 
 import static ru.work.service.view.JavaFxApplication.APPLICATION_CONTEXT;
+import static ru.work.service.view.component.notification.NotificationUtil.showAlert;
 
 @Slf4j
 @Component
@@ -59,7 +60,7 @@ public class AuthController {
         String text = authTextField.getText();
         if (StringUtils.isBlank(text) || !Arrays.equals(text.getBytes(StandardCharsets.UTF_8), KEY_ENCRYPT)) {
             ControllerUtil.blockButton(authButton, 5);
-            ControllerUtil.showAlert("Авторизация", "Не верный ключ", Notifications.WARNING);
+            showAlert("Авторизация", "Не верный ключ", Notifications.WARNING);
             authTextField.clear();
         } else {
             load();
@@ -90,7 +91,7 @@ public class AuthController {
                     isAuth = true;
                 } else {
                     isAuth = false;
-                    ControllerUtil.showAlert("Авторизация", "Не верный ключ в настройках", Notifications.WARNING);
+                    showAlert("Авторизация", "Не верный ключ в настройках", Notifications.WARNING);
                 }
             }
         }
@@ -98,14 +99,14 @@ public class AuthController {
 
     private void load() {
         try {
-            ControllerUtil.showAlert("Авторизация", "Успешная авторизация", Notifications.INFORMATION);
+            showAlert("Авторизация", "Успешная авторизация", Notifications.INFORMATION);
             FxWeaver fxWeaver = APPLICATION_CONTEXT.getBean(FxWeaver.class);
             Parent root = fxWeaver.loadView(MainController.class);
             Scene scene = new Scene(root);
             JavaFxApplication.WINDOW.setScene(scene);
         } catch (FxLoadException e) {
             log.error("Failed to load view MainController: {}", e.getMessage(), e);
-            ControllerUtil.showAlert("Авторизация", "Ошибка на стороне сервера: %s".formatted(e.getMessage()), Notifications.ERROR);
+            showAlert("Авторизация", "Ошибка на стороне сервера: %s".formatted(e.getMessage()), Notifications.ERROR);
         }
     }
 

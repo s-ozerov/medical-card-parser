@@ -2,6 +2,7 @@ package ru.work.service.view.controller;
 
 import atlantafx.base.theme.PrimerDark;
 import atlantafx.base.theme.PrimerLight;
+import com.github.plushaze.traynotification.notification.Notifications;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
@@ -53,12 +54,14 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static ru.work.service.dto.enums.Extension.DOC;
 import static ru.work.service.dto.enums.Extension.DOCX;
+import static ru.work.service.view.component.notification.NotificationUtil.showAlert;
 import static ru.work.service.view.util.Constants.CURRENT_THEME;
 import static ru.work.service.view.util.ImageFactory.buildSize36;
 import static ru.work.service.view.util.ImageFactory.buildSize48;
@@ -424,6 +427,7 @@ public class MainController {
                         try {
                             FileUtils.copyInputStreamToFile(this.downloadDto.getContent(), saveFile);
                             _log.info("Файл повторно сохранён «%s»", saveFile.getName());
+                            showAlert("Загрузка завершена", "Файл успешно сохранён:\n«%s»".formatted(downloadFilename), Notifications.INFORMATION);
                         } catch (IOException ex) {
                             _log.error("Не удалось сохранить файл «%s». Ошибка: %s", saveFile.getName(), ex.getMessage());
                         }
@@ -438,6 +442,7 @@ public class MainController {
                             FileUtils.copyInputStreamToFile(downloadDto.getContent(), saveFile);
                             _log.info("Успешно преобразован и сохранён.");
                             _log.info("Файл: %s", saveFile.getName());
+                            showAlert("Загрузка завершена", "Файл успешно сохранён:\n«%s»".formatted(saveFile.getName()), Notifications.INFORMATION);
                             if (!CollectionUtils.isEmpty(downloadDto.getNotFound())) {
                                 for (Map.Entry<String, String> entry : downloadDto.getNotFound().entrySet()) {
                                     if (!StringUtils.isNotBlank(entry.getValue())) {
@@ -601,8 +606,8 @@ public class MainController {
                                 AMP (столбец) - Ампициллин (значение)
                                 
                                 Каждому столбцу можно присваивать несколько значений (из-за встречающихся опечаток):
-                                COL4 - { Колистин МПК <= 4мг/л, Колистин МПК 4мг/л}
-                                FLU - { Флуконазод, Флуконазол }
+                                COL4 - { Колистин МПК <= 4мг/л; Колистин МПК 4мг/л }
+                                FLU  - { Флуконазод; Флуконазол }
                                 """)
                 ))
         );
