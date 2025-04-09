@@ -1,0 +1,38 @@
+.tree-view {
+    /*-fx-background-color: #f8f8f8;*/
+    /*-fx-border-color: #ddd;*/
+    -fx-border-radius: 5;
+    -fx-font-family: "Bookman Old Style"
+}
+
+.tree-cell {
+    -fx-padding: 8 5 8 5;
+}
+
+.tree-cell:selected {
+    -fx-text-fill: #000000;
+    -fx-background-color: #ff6200;
+}
+
+.tree-cell > .tree-disclosure-node > .arrow {
+    -fx-background-color: #666;
+}
+
+/* Стили для корневого элемента */
+.tree-cell > .tree-disclosure-node {
+    -fx-padding: 0 5 0 0;
+}
+
+/* Убираем фокус */
+.tree-view:focused {
+    -fx-background-color: transparent;
+}
+
+/* Стили для кнопки в ячейке */
+.tree-cell .button {
+    -fx-cursor: hand;
+}
+
+.tree-cell .button:hover {
+    -fx-text-fill: #1d7bb8;
+}
